@@ -1,7 +1,9 @@
 package www
 
 import(
+	"os"
 	"log"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -19,11 +21,71 @@ import(
 var (
 
 	// bucket name
-	bucketName = util.Env("BUCKET_NAME", "")
+	bucketName 				= util.Env("BUCKET_NAME", "")
 
 	// google storage credential file path
-	googleStorageCredPath = util.Env("GOOGLE_STORAGE_CREDENTIALS", "")
+	googleStorageCredPath 	= util.Env("GOOGLE_STORAGE_CREDENTIALS", "")
+
+	// Config params
+	configHost 				= util.Env("CONFIG_HOST", "")
+	configAuthToken 		= util.Env("CONFIG_AUTH_TOKEN", "")
+
+	// mongo params
+	MongoDBHosts 			= ""
+	MongoUsername 			= ""
+	MongoPassword 			= ""
+	MongoDatabase 			= ""
+
+	// mongo collections
+	CurrencyColName  		= 	util.Env("MONGO_CURRENCY_COL", "currency")
 )
+
+// fetch application config
+func fetchConfig() {
+
+	names := []string{ 
+		"MONGO_DB_HOST", 
+		"MONGO_DB_NAME", 
+		"MONGO_USERNAME", 
+		"MONGO_PASSWORD", 
+	}
+
+	keys := strings.Join(names, ",")
+	var url = fmt.Sprintf("%s/v1/keys/%s", configHost, keys)
+	var headers = map[string]string{
+		"Authorization": "Bearer " + configAuthToken,
+	}
+	
+	resp, err := util.NewGetRequest(url, headers)
+	if err != nil {
+		log.Println("failed to fetch config")
+		os.Exit(1)
+	}
+
+	defer resp.Body.Close()
+    contents, err := ioutil.ReadAll(resp.Body)
+    if err != nil {
+        log.Println("failed to read response from config host")
+		os.Exit(1)
+    }
+
+    data, err := util.DecodeJSONToMap(string(contents))
+    if err != nil {
+    	log.Println("failed to parse malformed config response")
+		os.Exit(1)
+    }
+
+    if resp.StatusCode != 200 {
+    	log.Println("failed: " + data["message"].(string))
+		os.Exit(1)
+    }
+
+    configs 			:= data["values"].(map[string]interface{})
+    MongoDBHosts 		= configs["MONGO_DB_HOST"].(string)
+    MongoUsername 		= configs["MONGO_USERNAME"].(string)
+    MongoPassword 		= configs["MONGO_PASSWORD"].(string)
+    MongoDatabase 		= configs["MONGO_DB_NAME"].(string)
+} 
 
 // setup middleware, logger etc
 func configRouter(router *echo.Echo, testMode bool) {
@@ -63,6 +125,13 @@ func CreateGoogleClients() *http.Client {
 	return gStorageClient;
 }
 
+// Fatally exits if an environment variable is unset
+func requiresEnv(envName string) {
+	if strings.TrimSpace(util.Env(envName, "")) == "" {
+		log.Fatal(envName + " environment variable is unset")
+	}
+}
+
 func App(testMode, runSeed bool) (*echo.Echo) {
 
 	// create new server and router
@@ -72,19 +141,23 @@ func App(testMode, runSeed bool) (*echo.Echo) {
 	router.Use(middleware.Recover())
 	config.HandleError(router)
 
+	// fetch config
+	fetchConfig()
+
 	// setup router
 	configRouter(router, testMode)
 
 	// bucket name must be set
-	if strings.TrimSpace(bucketName) == "" {
-		log.Fatal("BUCKET_NAME environment variable is unset")
-	}
+	requiresEnv("BUCKET_NAME")
+	requiresEnv("CONFIG_HOST")
 
 	// create google service clients
 	gStorageClient := CreateGoogleClients()
 
 	// add some data in global config
 	config.C.Add("bucket_name", bucketName)
+	config.C.Add("mongo_database", MongoDatabase)
+	config.C.Add("mongo_currency_collection", CurrencyColName)
 
 	// initialize controllers
 	appCntrl 	:= lib.NewAppController()
