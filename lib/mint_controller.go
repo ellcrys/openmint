@@ -12,13 +12,15 @@ import (
 
 	"github.com/ellcrys/openmint/config"
 	"github.com/ellcrys/util"
+	"gopkg.in/mgo.v2"
 	"github.com/ellcrys/openmint/extend"
 	storage "google.golang.org/api/storage/v1"
 )
 
 
 type MintController struct {
-	storageService *storage.Service
+	mongoSession 	*mgo.Session
+	storageService 	*storage.Service
 }
 
 // Create storage service.
@@ -31,9 +33,9 @@ func createStorageService(storageClient *http.Client) *storage.Service {
 }
 
 // Create a new controller instance
-func NewMintController(storageClient *http.Client) *MintController {
+func NewMintController(mongoSession *mgo.Session, storageClient *http.Client) *MintController {
 	storageService := createStorageService(storageClient)
-	return &MintController{ storageService }
+	return &MintController{ mongoSession, storageService }
 }
 
 // Store image in google cloud storage

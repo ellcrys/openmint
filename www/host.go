@@ -159,10 +159,17 @@ func App(testMode, runSeed bool) (*echo.Echo) {
 	config.C.Add("mongo_database", MongoDatabase)
 	config.C.Add("mongo_currency_collection", CurrencyColName)
 
+	// mongo connection
+	mongoSession, err := GetMongoSession(MongoDBHosts, MongoDatabase, MongoUsername, MongoPassword)
+	if err != nil {
+		util.Println("could not connect to mongo database")
+		os.Exit(1)
+	}
+
 	// initialize controllers
 	appCntrl 	:= lib.NewAppController()
 	policyCntrl := lib.NewPolicyController(appCntrl)
-	mintCntrl   := lib.NewMintController(gStorageClient)
+	mintCntrl   := lib.NewMintController(mongoSession, gStorageClient)
 
 	// app management related route
 	router.GET("/", extend.Handle(appCntrl.Index), UseAuthPolicy(policyCntrl)...)
