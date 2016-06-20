@@ -4,6 +4,7 @@ import(
 	"log"
 	"io/ioutil"
 	"net/http"
+	"strings"
 
 	"github.com/ellcrys/openmint/extend"
 	"github.com/ellcrys/openmint/config"
@@ -11,11 +12,18 @@ import(
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
 	"github.com/ellcrys/util"
-	// "golang.org/x/net/context"
 	"golang.org/x/oauth2"
     "golang.org/x/oauth2/google"
 )
 
+var (
+
+	// bucket name
+	bucketName = util.Env("BUCKET_NAME", "")
+
+	// google storage credential file path
+	googleStorageCredPath = util.Env("GOOGLE_STORAGE_CREDENTIALS", "")
+)
 
 // setup middleware, logger etc
 func configRouter(router *echo.Echo, testMode bool) {
@@ -38,7 +46,7 @@ func UseAuthPolicy(policyCntrl *lib.PolicyController) []echo.MiddlewareFunc {
 func CreateGoogleClients() *http.Client {
 
 	// get google storage crendentials
-	data, err := ioutil.ReadFile(util.Env("GOOGLE_STORAGE_CREDENTIALS", ""))
+	data, err := ioutil.ReadFile(googleStorageCredPath)
 	if err != nil {
 		util.Println("Failed to read storage credential from ", "GOOGLE_STORAGE_CREDENTIALS environment")
 	    log.Fatal(err)
@@ -67,8 +75,16 @@ func App(testMode, runSeed bool) (*echo.Echo) {
 	// setup router
 	configRouter(router, testMode)
 
+	// bucket name must be set
+	if strings.TrimSpace(bucketName) == "" {
+		log.Fatal("BUCKET_NAME environment variable is unset")
+	}
+
 	// create google service clients
 	gStorageClient := CreateGoogleClients()
+
+	// add some data in global config
+	config.C.Add("bucket_name", bucketName)
 
 	// initialize controllers
 	appCntrl 	:= lib.NewAppController()

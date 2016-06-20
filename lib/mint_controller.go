@@ -48,7 +48,8 @@ func (mc *MintController) SaveImage(file *multipart.FileHeader) error {
 	}
 
 	// add object to bucket
-	if res, err := mc.storageService.Objects.Insert("openmint-test", object).Media(curFile).Do(); err == nil {
+	bucketName := config.C.GetString("bucket_name")
+	if res, err := mc.storageService.Objects.Insert(bucketName, object).Media(curFile).Do(); err == nil {
         fmt.Printf("Created object %v at location %v\n\n", res.Name, res.SelfLink)
         return nil
     } else {

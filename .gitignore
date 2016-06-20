@@ -2,3 +2,4 @@ vendor/*
 !vendor/vendor.json
 gin-bin
 README_INTERNAL.MD
+openmint
