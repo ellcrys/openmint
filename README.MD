@@ -1,0 +1,1 @@
+Base web application for go.

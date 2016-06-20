@@ -1,0 +1,223 @@
+{
+	"comment": "",
+	"ignore": "test",
+	"package": [
+		{
+			"comment": "v4-6-gdf81827",
+			"path": "github.com/asaskevich/govalidator",
+			"revision": "df81827fdd59d8b4fb93d8910b286ab7a3919520"
+		},
+		{
+			"comment": "v2.6.0-5-g40bd0f3",
+			"path": "github.com/dgrijalva/jwt-go",
+			"revision": "40bd0f3b4891a9d7f121bfb7b8e8b0525625e262"
+		},
+		{
+			"path": "github.com/ellcrys/crypto",
+			"revision": "5061bbe142a75c2c40453b6bd12f9e8c16010496"
+		},
+		{
+			"path": "github.com/ellcrys/util",
+			"revision": "7847323278e605c86a34c312b73074ba0cac54bb"
+		},
+		{
+			"path": "github.com/fatih/structs",
+			"revision": "a9f7daa9c2729e97450c2da2feda19130a367d8f"
+		},
+		{
+			"comment": "v1.0.0-1-gb8dc900",
+			"path": "github.com/garyburd/redigo/internal",
+			"revision": "b8dc90050f24c1a73a52f107f3f575be67b21b7c"
+		},
+		{
+			"comment": "v1.0.0-1-gb8dc900",
+			"path": "github.com/garyburd/redigo/redis",
+			"revision": "b8dc90050f24c1a73a52f107f3f575be67b21b7c"
+		},
+		{
+			"path": "github.com/hashicorp/errwrap",
+			"revision": "7554cd9344cec97297fa6649b055a8c98c2a1e55"
+		},
+		{
+			"path": "github.com/hashicorp/go-cleanhttp",
+			"revision": "875fb671b3ddc66f8e2f0acc33829c8cb989a38d"
+		},
+		{
+			"path": "github.com/hashicorp/go-multierror",
+			"revision": "d30f09973e19c1dfcd120b2d9c4f168e68d6b5d5"
+		},
+		{
+			"path": "github.com/hashicorp/hcl",
+			"revision": "9a905a34e6280ce905da1a32344b25e81011197a"
+		},
+		{
+			"path": "github.com/hashicorp/hcl/hcl/ast",
+			"revision": "9a905a34e6280ce905da1a32344b25e81011197a"
+		},
+		{
+			"path": "github.com/hashicorp/hcl/hcl/parser",
+			"revision": "9a905a34e6280ce905da1a32344b25e81011197a"
+		},
+		{
+			"path": "github.com/hashicorp/hcl/hcl/scanner",
+			"revision": "9a905a34e6280ce905da1a32344b25e81011197a"
+		},
+		{
+			"path": "github.com/hashicorp/hcl/hcl/strconv",
+			"revision": "9a905a34e6280ce905da1a32344b25e81011197a"
+		},
+		{
+			"path": "github.com/hashicorp/hcl/hcl/token",
+			"revision": "9a905a34e6280ce905da1a32344b25e81011197a"
+		},
+		{
+			"path": "github.com/hashicorp/hcl/json/parser",
+			"revision": "9a905a34e6280ce905da1a32344b25e81011197a"
+		},
+		{
+			"path": "github.com/hashicorp/hcl/json/scanner",
+			"revision": "9a905a34e6280ce905da1a32344b25e81011197a"
+		},
+		{
+			"path": "github.com/hashicorp/hcl/json/token",
+			"revision": "9a905a34e6280ce905da1a32344b25e81011197a"
+		},
+		{
+			"path": "github.com/hashicorp/hcl/testhelper",
+			"revision": "9a905a34e6280ce905da1a32344b25e81011197a"
+		},
+		{
+			"comment": "v0.5.2-185-g8b78164",
+			"path": "github.com/hashicorp/vault/api",
+			"revision": "8b781645cbc4e35c4114c9d1d8bce2c8a32a6c8d"
+		},
+		{
+			"comment": "v2.0.1-1-g6e183fd",
+			"path": "github.com/labstack/echo",
+			"revision": "6e183fd3d8063a14da04fa4439c52fb6b84d1cdb"
+		},
+		{
+			"comment": "v2.0.1-1-g6e183fd",
+			"path": "github.com/labstack/echo/engine",
+			"revision": "6e183fd3d8063a14da04fa4439c52fb6b84d1cdb"
+		},
+		{
+			"comment": "v2.0.1-1-g6e183fd",
+			"path": "github.com/labstack/echo/engine/standard",
+			"revision": "6e183fd3d8063a14da04fa4439c52fb6b84d1cdb"
+		},
+		{
+			"comment": "v2.0.1-1-g6e183fd",
+			"path": "github.com/labstack/echo/engine/test",
+			"revision": "6e183fd3d8063a14da04fa4439c52fb6b84d1cdb"
+		},
+		{
+			"comment": "v2.0.1-1-g6e183fd",
+			"path": "github.com/labstack/echo/log",
+			"revision": "6e183fd3d8063a14da04fa4439c52fb6b84d1cdb"
+		},
+		{
+			"comment": "v2.0.1-1-g6e183fd",
+			"path": "github.com/labstack/echo/middleware",
+			"revision": "6e183fd3d8063a14da04fa4439c52fb6b84d1cdb"
+		},
+		{
+			"comment": "v2.0.1-1-g6e183fd",
+			"path": "github.com/labstack/echo/test",
+			"revision": "6e183fd3d8063a14da04fa4439c52fb6b84d1cdb"
+		},
+		{
+			"comment": "v0.0.3-54-g722aa12",
+			"path": "github.com/labstack/gommon/bytes",
+			"revision": "722aa12d41c236ce78ff48eac1cafe0107ecdc9d"
+		},
+		{
+			"comment": "v0.0.3-54-g722aa12",
+			"path": "github.com/labstack/gommon/color",
+			"revision": "722aa12d41c236ce78ff48eac1cafe0107ecdc9d"
+		},
+		{
+			"comment": "v0.0.3-54-g722aa12",
+			"path": "github.com/labstack/gommon/log",
+			"revision": "722aa12d41c236ce78ff48eac1cafe0107ecdc9d"
+		},
+		{
+			"comment": "v0.0.4-1-ge8a10dd",
+			"path": "github.com/mattn/go-colorable",
+			"revision": "e8a10ddc7d2a7fe255f6fd7f501070a4cb62c183"
+		},
+		{
+			"path": "github.com/mattn/go-isatty",
+			"revision": "56b76bdf51f7708750eac80fa38b952bb9f32639"
+		},
+		{
+			"path": "github.com/mitchellh/mapstructure",
+			"revision": "281073eb9eb092240d33ef253c404f1cca550309"
+		},
+		{
+			"comment": "v1.0.0",
+			"path": "github.com/satori/go.uuid",
+			"revision": "f9ab0dce87d815821e221626b772e3475a0d2749"
+		},
+		{
+			"path": "github.com/square/go-jose/cipher",
+			"revision": "d2a847139a1442cada879cc05cc4080485b8d193"
+		},
+		{
+			"path": "github.com/square/go-jose/json",
+			"revision": "d2a847139a1442cada879cc05cc4080485b8d193"
+		},
+		{
+			"path": "github.com/ugorji/go/codec",
+			"revision": "a396ed22fc049df733440d90efe17475e3929ccb"
+		},
+		{
+			"path": "github.com/valyala/fasttemplate",
+			"revision": "3b874956e03f1636d171bda64b130f9135f42cff"
+		},
+		{
+			"path": "golang.org/x/net/context",
+			"revision": "3f122ce3dbbe488b7e6a8bdb26f41edec852a40b"
+		},
+		{
+			"path": "golang.org/x/sys/unix",
+			"revision": "20457ee8ea8546920d3f4e19e405da45250dc5a5"
+		},
+		{
+			"comment": "r2016.02.04-3-g29cc868",
+			"path": "gopkg.in/mgo.v2",
+			"revision": "29cc868a5ca65f401ff318143f9408d02f4799cc"
+		},
+		{
+			"comment": "r2016.02.04-3-g29cc868",
+			"path": "gopkg.in/mgo.v2/bson",
+			"revision": "29cc868a5ca65f401ff318143f9408d02f4799cc"
+		},
+		{
+			"comment": "r2016.02.04-3-g29cc868",
+			"path": "gopkg.in/mgo.v2/internal/sasl",
+			"revision": "29cc868a5ca65f401ff318143f9408d02f4799cc"
+		},
+		{
+			"comment": "r2016.02.04-3-g29cc868",
+			"path": "gopkg.in/mgo.v2/internal/scram",
+			"revision": "29cc868a5ca65f401ff318143f9408d02f4799cc"
+		},
+		{
+			"comment": "v1.0.2",
+			"path": "gopkg.in/square/go-jose.v1",
+			"revision": "e3f973b66b91445ec816dd7411ad1b6495a5a2fc"
+		},
+		{
+			"comment": "v1.0.2",
+			"path": "gopkg.in/square/go-jose.v1/cipher",
+			"revision": "e3f973b66b91445ec816dd7411ad1b6495a5a2fc"
+		},
+		{
+			"comment": "v1.0.2",
+			"path": "gopkg.in/square/go-jose.v1/json",
+			"revision": "e3f973b66b91445ec816dd7411ad1b6495a5a2fc"
+		}
+	],
+	"rootPath": "github.com/ellcrys/openmint"
+}
