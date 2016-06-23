@@ -5,62 +5,115 @@ import (
 	"log"
 	"net/http"
 	"strings"
-	"strconv"
 	"mime/multipart"
 	"fmt"
 	"path"
 
 	"github.com/ellcrys/openmint/config"
+	"github.com/ellcrys/openmint/models"
 	"github.com/ellcrys/util"
 	"gopkg.in/mgo.v2"
 	"github.com/ellcrys/openmint/extend"
 	storage "google.golang.org/api/storage/v1"
+	vision "google.golang.org/api/vision/v1"
 )
 
 
 type MintController struct {
 	mongoSession 	*mgo.Session
 	storageService 	*storage.Service
+	visionService   *vision.Service
 }
 
 // Create storage service.
-func createStorageService(storageClient *http.Client) *storage.Service {
-	service, err := storage.New(storageClient)
+func createStorageService(client *http.Client) *storage.Service {
+	service, err := storage.New(client)
     if err != nil {
         log.Fatalf("Unable to create storage service: %v", err)
     }
     return service
 }
 
+// Create vision service
+func createVisionService(client *http.Client) *vision.Service {
+	service, err := vision.New(client)
+	if err != nil {
+        log.Fatalf("Unable to create vision service: %v", err)
+    }
+    return service
+}
+
 // Create a new controller instance
-func NewMintController(mongoSession *mgo.Session, storageClient *http.Client) *MintController {
+func NewMintController(mongoSession *mgo.Session, storageClient *http.Client, visionClient *http.Client) *MintController {
 	storageService := createStorageService(storageClient)
-	return &MintController{ mongoSession, storageService }
+	visionService := createVisionService(visionClient)
+	return &MintController{ mongoSession, storageService, visionService }
 }
 
 // Store image in google cloud storage
-func (mc *MintController) SaveImage(file *multipart.FileHeader) error {
+func (mc *MintController) SaveImage(file *multipart.FileHeader) (string, error) {
 		
 	// create the object
 	object := &storage.Object{ Name: util.RandString(32) + path.Ext(file.Filename) }
 	curFile, err := file.Open()
 	defer curFile.Close()
 	if err != nil {
-		return errors.New("failed to open currency image. " + err.Error())
+		return "", errors.New("failed to open currency image. " + err.Error())
 	}
 
 	// add object to bucket
 	bucketName := config.C.GetString("bucket_name")
 	if res, err := mc.storageService.Objects.Insert(bucketName, object).Media(curFile).Do(); err == nil {
-        fmt.Printf("Created object %v at location %v\n\n", res.Name, res.SelfLink)
-        return nil
+        return res.Name, nil
     } else {
-        return errors.New("failed to create object in cloud storage. " + err.Error())
+        return "", errors.New("failed to create object in cloud storage. " + err.Error())
     }
+}
+
+// Process a currency
+func (mc *MintController) ProcessCurrency(curCode, imageName, currencyId string) {
+
+	// get currency language
+	lang := config.GetCurrencyLang(curCode)
+
+	// process currency image. Get labels and text extracts.
+	gcsImageUri := fmt.Sprintf("gs://%s/%s", config.C.GetString("bucket_name"), imageName)
+	imgProcRes, err := ProcessImage(lang, mc.visionService, gcsImageUri)
+	if err != nil{
+		if err = models.Currency.UpdateStatus(mc.mongoSession, currencyId, "failed"); err != nil {
+			util.Println("Failed to update currency status")
+		}
+		return
+	}
+
+	// ensure we got a response
+	if len(imgProcRes.Responses) == 0 {
+		util.Println("Got not annotation response for currency#" + currencyId)
+		return
+	}
+
+	// extract tokens from text annotation
+	var tokens = ProcessText(imgProcRes.Responses[0].TextAnnotations)
+	for _, t := range tokens {
+		util.Println("[",t,"]")
+	}
+	
+	result, err := ProcessMoney(curCode, tokens, imgProcRes.Responses[0].LabelAnnotations); 
+	util.Println(result, err)
+	if err != nil {
+		if err = models.Currency.UpdateStatus(mc.mongoSession, currencyId, "failed"); err != nil {
+			util.Println("Failed to update currency status")
+		}
+		return
+	}
 }
 
 // Process a new currency
 func (mc *MintController) Process(c *extend.Context) error {
+
+	// TODO: get address from session
+	var address = "test-address"
+	var imageName string
 
 	// get currency image
 	currencyImg, err := c.Echo().FormFile("currency_image")
@@ -79,25 +132,28 @@ func (mc *MintController) Process(c *extend.Context) error {
 		return config.NewHTTPError(c.Lang(), 400, "e004")
 	}
 
-	// get currency denomination
-	curDenomination := c.Echo().FormValue("currency_denom")
-	if len(strings.TrimSpace(curDenomination)) == 0 {
-		return config.NewHTTPError(c.Lang(), 400, "e005")
-	}
-	
-	// convert currency denomination to integer
-	curDenominationInt, err := strconv.Atoi(curDenomination)
-	if err != nil {
-		return config.NewHTTPError(c.Lang(), 500, "e500")
-	} else if !config.IsValidDenomination(strings.ToUpper(curCode), curDenominationInt) {
-		return config.NewHTTPError(c.Lang(), 400, "e006")
-	}
-
 	// save currency image
-	if err = mc.SaveImage(currencyImg); err != nil {
-		util.Println(err)
+	if imageName, err = mc.SaveImage(currencyImg); err != nil {
 		return config.NewHTTPError(c.Lang(), 500, "e500")
 	}
 
-	return c.String(200, "Hello World!")
+	// create currency entry
+	currency := &models.CurrencyModel{
+		Id: models.NewId(),
+		Address: address,
+		ImageID: imageName, 
+		Code: curCode,
+	}
+
+	if err = models.Currency.Create(mc.mongoSession, currency); err != nil {
+		return config.NewHTTPError(c.Lang(), 500, "e500")
+	}
+
+	// process image asynchronously
+	go mc.ProcessCurrency(curCode, imageName, currency.Id.Hex())
+
+	return c.JSON(201, extend.H{
+		"status": "processing",
+		"id": currency.Id.Hex(),	
+	})
 }

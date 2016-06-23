@@ -12,7 +12,8 @@ type CurrencyModel struct {
     Address 			string 			`json:"name" bson:"name"`
     ImageID 	   		string 			`json:"image_id" bson:"image_id"`
     Code 		 		string 			`json:"code" bson:"code"`
-    Denom 				string 			`json:"denom" bson:"denom"`
+    SuggestedDenom		int 			`json:"suggested_denom" bson:"suggested_denom"`
+    Status 				string 			`json:"status" bson:"status"`
     CreatedAt 			time.Time 	  	`json:"created_at" bson:"created_at"`	
 }
 
@@ -53,3 +54,12 @@ func (m *CurrencyModel) Delete(ses *mgo.Session, id string) error {
 	return c.RemoveId(bson.ObjectIdHex(id))
 }
 
+func (m *CurrencyModel) UpdateField(ses *mgo.Session, id, field, newValue string) error {
+	ses.SetMode(mgo.Monotonic, true)
+	c := ses.DB(config.C.GetString("mongo_database")).C(config.C.GetString("mongo_currency_collection"))
+	return c.UpdateId(bson.ObjectIdHex(id), bson.M{ "$set": bson.M{ field: newValue }})
+}
+
+func (m *CurrencyModel) UpdateStatus(ses *mgo.Session, id, newStatus string) error {
+	return m.UpdateField(ses, id, "status", newStatus)
+}

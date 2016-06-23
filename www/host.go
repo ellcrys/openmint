@@ -16,6 +16,7 @@ import(
 	"github.com/ellcrys/util"
 	"golang.org/x/oauth2"
     "golang.org/x/oauth2/google"
+    vision "google.golang.org/api/vision/v1"
 )
 
 var (
@@ -25,6 +26,7 @@ var (
 
 	// google storage credential file path
 	googleStorageCredPath 	= util.Env("GOOGLE_STORAGE_CREDENTIALS", "")
+	googleVisionCredPath 	= util.Env("GOOGLE_VISION_CREDENTIALS", "")
 
 	// Config params
 	configHost 				= util.Env("CONFIG_HOST", "")
@@ -105,24 +107,40 @@ func UseAuthPolicy(policyCntrl *lib.PolicyController) []echo.MiddlewareFunc {
 
 // Creates google cloud storage client
 // and any other client required.
-func CreateGoogleClients() *http.Client {
+func CreateGoogleClients() (*http.Client, *http.Client) {
 
 	// get google storage crendentials
-	data, err := ioutil.ReadFile(googleStorageCredPath)
+	gStorageCredData, err := ioutil.ReadFile(googleStorageCredPath)
 	if err != nil {
-		util.Println("Failed to read storage credential from ", "GOOGLE_STORAGE_CREDENTIALS environment")
+		util.Println("Failed to read storage credential from ", "GOOGLE_STORAGE_CREDENTIALS environment variable")
 	    log.Fatal(err)
 	}
 	
 	scope := "https://www.googleapis.com/auth/devstorage.full_control"
-	conf, err := google.JWTConfigFromJSON(data, scope)
+	conf, err := google.JWTConfigFromJSON(gStorageCredData, scope)
 	if err != nil {
 	    log.Fatal(err)
 	}
 
 	// Initiate an http.Client
 	gStorageClient := conf.Client(oauth2.NoContext)
-	return gStorageClient;
+
+	// get google vision credentials
+	gVisionCredData, err := ioutil.ReadFile(googleVisionCredPath)
+	if err != nil {
+		util.Println("Failed to read vision credential from ", "GOOGLE_VISION_CREDENTIALS environment variable")
+	    log.Fatal(err)
+	}
+
+	// parse client credential file
+	config, err := google.JWTConfigFromJSON(gVisionCredData, vision.CloudPlatformScope)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	gVisionClient := config.Client(oauth2.NoContext)
+
+	return gStorageClient, gVisionClient;
 }
 
 // Fatally exits if an environment variable is unset
@@ -152,7 +170,7 @@ func App(testMode, runSeed bool) (*echo.Echo) {
 	requiresEnv("CONFIG_HOST")
 
 	// create google service clients
-	gStorageClient := CreateGoogleClients()
+	gStorageClient, gVisionClient := CreateGoogleClients()
 
 	// add some data in global config
 	config.C.Add("bucket_name", bucketName)
@@ -169,7 +187,7 @@ func App(testMode, runSeed bool) (*echo.Echo) {
 	// initialize controllers
 	appCntrl 	:= lib.NewAppController()
 	policyCntrl := lib.NewPolicyController(appCntrl)
-	mintCntrl   := lib.NewMintController(mongoSession, gStorageClient)
+	mintCntrl   := lib.NewMintController(mongoSession, gStorageClient, gVisionClient)
 
 	// app management related route
 	router.GET("/", extend.Handle(appCntrl.Index), UseAuthPolicy(policyCntrl)...)

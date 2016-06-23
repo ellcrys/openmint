@@ -3,16 +3,11 @@ package common
 import (
 	"net/http/httptest"
 	"net/http"
-	"time"
 	"strings"
 	"net/url"
 
-	"gopkg.in/mgo.v2"
-	"gopkg.in/mgo.v2/bson"
-	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/ellcrys/util"
-	"github.com/ellcrys/crypto"
-	"github.com/garyburd/redigo/redis"
+	"github.com/ellcrys/openmint/extend"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/engine/standard"
 )
