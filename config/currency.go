@@ -235,6 +235,11 @@ var currencyMeta = map[string]map[string]interface{}{
 	"USN": map[string]interface{}{},
 	"XXX": map[string]interface{}{},
 }
+
+func SetCurrencyMeta(newMeta map[string]map[string]interface{}) {
+	currencyMeta = newMeta
+}
+
 // Check if a currency code is valid
 func IsValidCode(code string) bool {
 	for curName, _ := range currencyMeta {
@@ -266,30 +271,40 @@ func IsValidDenomination(curCode string, denom int) bool {
 
 // Get the language of a currency
 func GetCurrencyLang(curCode string) string {
-	var curMeta = currencyMeta[curCode]
-	return curMeta["lang"].(string)
+	if curMeta, set := currencyMeta[curCode]; set {
+		return curMeta["lang"].(string)
+	}
+	return ""
 }
 
 // Get the denominations associated with a currency
 func GetCurrencyDenoms(curCode string) []string {
-	var curMeta = currencyMeta[curCode]
-	return util.GetMapKeys(curMeta["denominations"].(map[string]interface{}))
+	if curMeta, set := currencyMeta[curCode]; set {
+		return util.GetMapKeys(curMeta["denominations"].(map[string]interface{}))
+	}
+	return nil
 }
 
 // Get the text marks associated with a currency
 func GetCurrencyTextMarks(curCode string) []string {
-	var curMeta = currencyMeta[curCode]
-	return curMeta["text_marks"].([]string)
+	if curMeta, set := currencyMeta[curCode]; set {
+		return curMeta["text_marks"].([]string)
+	}
+	return nil
 }
 
 // Get the seria regex associated with a currency
 func GetCurrencySerialData(curCode string) map[string]interface{} {
-	var curMeta = currencyMeta[curCode]
-	return curMeta["serial"].(map[string]interface{})
+	if curMeta, set := currencyMeta[curCode]; set {
+		return curMeta["serial"].(map[string]interface{})
+	}
+	return nil
 }
 
 // Get denomination data of a currency
 func GetDenominationData(curCode string) map[string]interface{} {
-	var curMeta = currencyMeta[curCode]
-	return curMeta["denominations"].(map[string]interface{})
+	if curMeta, set := currencyMeta[curCode]; set {
+		return curMeta["denominations"].(map[string]interface{})
+	}
+	return nil
 }

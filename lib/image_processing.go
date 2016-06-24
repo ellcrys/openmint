@@ -74,9 +74,25 @@ func HasTextMarks(curCode string, curTokens []string) bool {
 	return true
 }
 
+// Given a slice of tokens, it will join the tokens
+// based on the method provided. 
+// "space_delimited" will join all tokens with a single space between them.
+// "no_delimiter" will join all tokens with no space between them.
+func JoinToken(tokens []string, method string) string {
+	switch method {
+	case "space_delimited":
+		return strings.Join(tokens, " ")
+	case "no_delimiter":
+		return strings.Join(tokens, "")
+	default:
+		util.Println("Warning: ", "Unsupported join method: ", method)
+		return ""
+	}
+}
+
 // Given a currency code, pick the token that represents
 // the serial of the currency
-func ExtractSerial(denomination, curCode string, curTokens []string) string {
+func ExtractSerial(denomination, curCode string, curTokens []string) (string, error) {
 
 	var serial = ""
 	var data = config.GetCurrencySerialData(curCode)
@@ -144,25 +160,22 @@ func ExtractSerial(denomination, curCode string, curTokens []string) string {
 							}
 
 						} else {
-							panic("unsupported reference regex directive type")
+							return serial, errors.New("unsupported reference regex directive type")
 						}
 
 					} else {
-						panic(fmt.Sprintf("regex instruction %s not defined", rxData))
+						return serial, errors.New(fmt.Sprintf("regex instruction '%s' not defined", rxData))
 					}
 
 				default:
-					panic("unsupported regex directive type")
+					return serial, errors.New("unsupported regex directive type")
 			}
 		}
 	}
 	
-	if joinMethod == "space_delimited" {
-		joinedTokens = strings.Join(curTokens, " ")
-	}
-
-	if joinMethod == "no_delimiter" {
-		joinedTokens = strings.Join(curTokens, "")
+	// join tokens
+	if joinMethod != "no" {
+		joinedTokens = JoinToken(curTokens, joinMethod)
 	}
 
 	// find serial in the tokens
@@ -193,11 +206,11 @@ func ExtractSerial(denomination, curCode string, curTokens []string) string {
 				serial = Filter(serial, filters)
 			}
 
-			return serial
+			return serial, nil
 		}
 	}
 
-	return serial
+	return serial, nil
 }
 
 
@@ -213,8 +226,9 @@ func DetermineDenomination(curCode string, curTokens []string) string {
 
 		// join tokens?
 		var joinedTokens = ""
-		if data.(map[string]interface{})["join_method"].(string) == "space_delimited" {
-			joinedTokens = strings.Join(curTokens, " ")
+		var joinMethod = data.(map[string]interface{})["join_method"].(string)
+		if joinMethod != "" {
+			joinedTokens = JoinToken(curTokens, joinMethod)
 		}
 
 		// search for denomination patterns in joined tokens
@@ -234,7 +248,7 @@ func DetermineDenomination(curCode string, curTokens []string) string {
 		}
 
 		// search for denonimationn patterns in token slice
-		if data.(map[string]interface{})["join_method"].(string) == "no" {
+		if joinMethod == "no" {
 			var matchCount = 0
 			var patterns = data.(map[string]interface{})["rx"].([]string)
 			for _, pattern := range patterns {
@@ -292,11 +306,12 @@ func ProcessMoney(curCode string, curTokens []string, labels []*vision.EntityAnn
 	}
 
 	// extract serial number
-	result["serial"] = ExtractSerial(suggestedDenomination, curCode, curTokens)
-	if result["serial"] == "" {
-		return result, errors.New("failed to extract serial")
+	serial, err := ExtractSerial(suggestedDenomination, curCode, curTokens)
+	if result["serial"] == "" || err != nil {
+		return result, errors.New("failed to extract serial. " + err.Error())
 	}
 
+	result["serial"] = serial
 	return result, nil
 }
 

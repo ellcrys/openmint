@@ -2,7 +2,6 @@
 package lib
 
 import (
-
 	"github.com/ellcrys/openmint/extend"
 )
 

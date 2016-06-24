@@ -2,12 +2,12 @@
 package test
 
 import (
-	"github.com/ellcrys/openmint/www"
+	//"github.com/ellcrys/openmint/www"
 )
 
 func init() {
 
 	// initialize app test config
-	www.App(true, true)
+	//www.App(true, true)
 
 }

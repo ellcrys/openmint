@@ -6,8 +6,8 @@ import (
 )
 
 // Pass a string through a series of filters
-func Filter(str string, filterList []string) string {
-	for _, name := range filterList {
+func Filter(str string, filterFuncs []string) string {
+	for _, name := range filterFuncs {
 		if name == "remove-spaces" {
 			str = RemoveSpaces(str)
 			continue
