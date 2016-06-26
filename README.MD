@@ -1,4 +1,4 @@
-##### Openmint
+## Openmint
 
 Openmint server application accepts request containing information such as a currency image, currency code and optionally,
 the denomination. It analyzes it image, extracts the serial and denomination (if not provided). The `lib/currency_meta.go`
@@ -66,38 +66,38 @@ map[string]interface{}{
 }
 ```
 
-# $currency.denominations.{DENOM}.join_token_method
+##### $currency.denominations.{DENOM}.join_token_method
 This instruction tells the engine how to handle tokens. Passing `no` will
 leave the tokens in their inital state as a list of tokens extracted from the curreny. `space_delimited` 
 will join the tokens into a single string with space between each token. `no_delimiter` will join the tokens together
 with no delimeter between them. These options give you the freedom to search for specific terms in a one
 whole text.
 
-# $currency.denominations.{DENOM}.rx
+##### $currency.denominations.{DENOM}.rx
 A list of regular expression pattern for picking out patterns that uniquely
 identify the denomination. Before a denomination is selected as a match, 
 all patterns in the slice must match. The regex engine used is the default
 go engine. To use an alternative engine that is based on .NET regexp, use
 the `$currency.denominations.{DENOM}.rx2` option instead.
 
-# $currency.denominations.{DENOM}.rx2 - (optional)
+##### $currency.denominations.{DENOM}.rx2 - (optional)
 Similar to `$currency.denominations.{DENOM}.rx`. It supports
 backtracking and as such supports lookahead operations. It uses [regexp2](https://github.com/dlclark/regexp2). 
 
-# $currency.denominations.{DENOM}.fuzzy - (optional):
+##### $currency.denominations.{DENOM}.fuzzy - (optional):
 Pass an instance to a `NewFuzzyModel` object. The `NewFuzzyModel` provides fuzzy 
 searching capabilities. This will allow us fix tokens with erroneous or incomplete spelling.
 
-# $currency.denominations.{DENOM}.fuzzy_ignore - (optional):
+##### $currency.denominations.{DENOM}.fuzzy_ignore - (optional):
 Provide a slice of tokens to be ignored when running the extracted
 tokens through the fuzzy model. This is useful for when you need to
 prevent certain words from returning unwanted fuzzy matches. 
 
-# $currency.denominations.text_marks - (optional): 
+##### $currency.denominations.text_marks - (optional): 
 This should optionally contain a slice of tokens that must be
 present in every denomination of a single currency.
 
-# $currency.denominations.{DENOM}.serial 
+##### $currency.denominations.{DENOM}.serial 
 This is a key/value map of instructions that helps in the
 extraction of a currency's serial number. It can contain instructions 
 for every denominations. By convention, the instruction for a 
@@ -112,38 +112,38 @@ key/value map is considered a default instruction option.
 
 Here are the specific options in the instructions map:
 
-# $currency.denominations.{DENOM}.serial.{rx_DENOM}.join_token_method
+##### $currency.denominations.{DENOM}.serial.{rx_DENOM}.join_token_method
 This directive tells the engine how it should handle tokens. Passing `no` will
 leave the tokens in their inital state as a list of tokens extracted from the curreny. `space_delimited` 
 will join the tokens into a single string with space between each token. `no_delimiter` will join the tokens together
 with no delimeter between them. These options give you the freedom to search for specific terms in one
 whole text.
 
-# $currency.denominations.{DENOM}.serial.{rx_DENOM}.rx 
+##### $currency.denominations.{DENOM}.serial.{rx_DENOM}.rx 
 A regular expression pattern for selecting the serial number from 
 the tokens extracted from the currency. Uses golang's native regex engine.
 
-# $currency.denominations.{DENOM}.serial.{rx_DENOM}.rx2
+##### $currency.denominations.{DENOM}.serial.{rx_DENOM}.rx2
 Similar to `$currency.denominations.{DENOM}.serial.{rx_DENOM}.rx`. It supports
 backtracking and as such supports lookahead operations. It uses [regexp2](https://github.com/dlclark/regexp2). 
 
-# $currency.denominations.{DENOM}.serial.{rx_DENOM}.rx2_from_right
+##### $currency.denominations.{DENOM}.serial.{rx_DENOM}.rx2_from_right
 Sets the `RIGHT_TO_LEFT` option of the regex engine. This will only 
 work if `$currency.denominations.{DENOM}.serial.{rx_DENOM}.rx2` is being used. 
 
-# $currency.denominations.{DENOM}.serial.{rx_DENOM}.rx_group
+##### $currency.denominations.{DENOM}.serial.{rx_DENOM}.rx_group
 This is the group index to use as the resulting serial when a match is found.
 
-# $currency.denominations.{DENOM}.serial.{rx_DENOM}.filters
+##### $currency.denominations.{DENOM}.serial.{rx_DENOM}.filters
 This is a list of names that represents filter to pass the resulting
 serial through. Useful for performing operations on an extracted serial.
 
-# $currency.denominations.{DENOM}.serial.{rx_DENOM}.match_filters
+##### $currency.denominations.{DENOM}.serial.{rx_DENOM}.match_filters
 This is a list of names that represents filter to pass the regex
 match slice through. Useful for performing operations result of the `rx` or `rx2`
 patterns.
 
-# $currency.denominations.{DENOM}.serial.{rx_DENOM}.remove_tokens
+##### $currency.denominations.{DENOM}.serial.{rx_DENOM}.remove_tokens
 This should hold a slice of strings to remove from the list of tokens
 is `join_token_method` is `no` or the text if `join_token_method` is either
 `space_delimited` or `no_delimiter`. Regex patterns can also be included. 
