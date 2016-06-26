@@ -71,10 +71,10 @@ func (mc *MintController) SaveImage(file *multipart.FileHeader) (string, error) 
 }
 
 // Process a currency
-func (mc *MintController) ProcessCurrency(curCode, imageName, currencyId string) {
+func (mc *MintController) ProcessCurrency(curCode, curDenom, imageName, currencyId string) {
 
 	// get currency language
-	lang := config.GetCurrencyLang(curCode)
+	lang := GetCurrencyLang(curCode)
 
 	// process currency image. Get labels and text extracts.
 	gcsImageUri := fmt.Sprintf("gs://%s/%s", config.C.GetString("bucket_name"), imageName)
@@ -94,11 +94,8 @@ func (mc *MintController) ProcessCurrency(curCode, imageName, currencyId string)
 
 	// extract tokens from text annotation
 	var tokens = ProcessText(imgProcRes.Responses[0].TextAnnotations)
-	for _, t := range tokens {
-		util.Println("[",t,"]")
-	}
-	
-	result, err := ProcessMoney(curCode, tokens, imgProcRes.Responses[0].LabelAnnotations); 
+
+	result, err := ProcessMoney(curCode, curDenom, tokens, imgProcRes.Responses[0].LabelAnnotations); 
 	util.Println(result, err)
 	if err != nil {
 		if err = models.Currency.UpdateStatus(mc.mongoSession, currencyId, "failed"); err != nil {
@@ -128,8 +125,14 @@ func (mc *MintController) Process(c *extend.Context) error {
 	curCode := c.Echo().FormValue("currency_code")
 	if len(strings.TrimSpace(curCode)) == 0 {
 		return config.NewHTTPError(c.Lang(), 400, "e003")
-	} else if !config.IsValidCode(strings.ToUpper(curCode)) {
+	} else if !IsValidCode(strings.ToUpper(curCode)) {
 		return config.NewHTTPError(c.Lang(), 400, "e004")
+	}
+
+	// currency denomination (optional)
+	curDenom := c.Echo().FormValue("currency_denom")
+	if curDenom != "" && !util.InStringSlice(GetCurrencyDenoms(curCode), curDenom) {
+		return config.NewHTTPError(c.Lang(), 400, "e005")
 	}
 
 	// save currency image
@@ -150,7 +153,7 @@ func (mc *MintController) Process(c *extend.Context) error {
 	}
 
 	// process image asynchronously
-	go mc.ProcessCurrency(curCode, imageName, currency.Id.Hex())
+	go mc.ProcessCurrency(curCode, curDenom, imageName, currency.Id.Hex())
 
 	return c.JSON(201, extend.H{
 		"status": "processing",

@@ -17,8 +17,10 @@
 			"revision": "5061bbe142a75c2c40453b6bd12f9e8c16010496"
 		},
 		{
+			"checksumSHA1": "+emmwJPxU+ypx41CUxtN3+yKznk=",
 			"path": "github.com/ellcrys/util",
-			"revision": "7847323278e605c86a34c312b73074ba0cac54bb"
+			"revision": "170b87bbaa2c9d899d146ffb0002d7bf0c7a3363",
+			"revisionTime": "2016-06-26T08:44:23Z"
 		},
 		{
 			"path": "github.com/fatih/structs",

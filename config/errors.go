@@ -16,8 +16,7 @@ var errors = map[string]map[string]string {
 		"e002": "currency image is required",
 		"e003": "currency code is required",
 		"e004": "currency code is invalid",
-		"e005": "currency denomination is required",
-		"e006": "currency denomination is unrecognized",
+		"e005": "currency denomination is unrecognized",
 	},
 }
 

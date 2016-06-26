@@ -3,3 +3,4 @@ vendor/*
 gin-bin
 README_INTERNAL.MD
 openmint
+start.sh
