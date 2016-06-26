@@ -45,12 +45,12 @@ map holds instructions on how to parse and extract the data we need.
 For this doc, lets assume `$currency` represents a currency. We can now describe all the available 
 instructions as follows:
 
-# $currency.lang
+##### $currency.lang
 This is the language the currency text is written in. e.g en, fr, ru. This
 helps to greatly improve the text extraction operation. I can also
 produce really bad results if the wrong language is used.
 
-# $currency.denominations
+##### $currency.denominations
 This is a map describing all the denominations of the currency. It
 takes the currency codes as the key and a map of instruction as value.
 
