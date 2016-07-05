@@ -2,59 +2,58 @@ package lib
 
 import (
 	"errors"
-	"log"
-	"net/http"
-	"strings"
-	"mime/multipart"
 	"fmt"
+	"log"
+	"mime/multipart"
+	"net/http"
 	"path"
+	"strings"
 
 	"github.com/ellcrys/openmint/config"
+	"github.com/ellcrys/openmint/extend"
 	"github.com/ellcrys/openmint/models"
 	"github.com/ellcrys/util"
-	"gopkg.in/mgo.v2"
-	"github.com/ellcrys/openmint/extend"
 	storage "google.golang.org/api/storage/v1"
 	vision "google.golang.org/api/vision/v1"
+	"gopkg.in/mgo.v2"
 )
 
-
 type MintController struct {
-	mongoSession 	*mgo.Session
-	storageService 	*storage.Service
-	visionService   *vision.Service
+	mongoSession   *mgo.Session
+	storageService *storage.Service
+	visionService  *vision.Service
 }
 
 // Create storage service.
 func createStorageService(client *http.Client) *storage.Service {
 	service, err := storage.New(client)
-    if err != nil {
-        log.Fatalf("Unable to create storage service: %v", err)
-    }
-    return service
+	if err != nil {
+		log.Fatalf("Unable to create storage service: %v", err)
+	}
+	return service
 }
 
 // Create vision service
 func createVisionService(client *http.Client) *vision.Service {
 	service, err := vision.New(client)
 	if err != nil {
-        log.Fatalf("Unable to create vision service: %v", err)
-    }
-    return service
+		log.Fatalf("Unable to create vision service: %v", err)
+	}
+	return service
 }
 
 // Create a new controller instance
 func NewMintController(mongoSession *mgo.Session, storageClient *http.Client, visionClient *http.Client) *MintController {
 	storageService := createStorageService(storageClient)
 	visionService := createVisionService(visionClient)
-	return &MintController{ mongoSession, storageService, visionService }
+	return &MintController{mongoSession, storageService, visionService}
 }
 
 // Store image in google cloud storage
 func (mc *MintController) SaveImage(file *multipart.FileHeader) (string, error) {
-		
+
 	// create the object
-	object := &storage.Object{ Name: util.RandString(32) + path.Ext(file.Filename) }
+	object := &storage.Object{Name: util.RandString(32) + path.Ext(file.Filename)}
 	curFile, err := file.Open()
 	defer curFile.Close()
 	if err != nil {
@@ -64,10 +63,10 @@ func (mc *MintController) SaveImage(file *multipart.FileHeader) (string, error) 
 	// add object to bucket
 	bucketName := config.C.GetString("bucket_name")
 	if res, err := mc.storageService.Objects.Insert(bucketName, object).Media(curFile).Do(); err == nil {
-        return res.Name, nil
-    } else {
-        return "", errors.New("failed to create object in cloud storage. " + err.Error())
-    }
+		return res.Name, nil
+	} else {
+		return "", errors.New("failed to create object in cloud storage. " + err.Error())
+	}
 }
 
 // Process a currency
@@ -79,7 +78,7 @@ func (mc *MintController) ProcessCurrency(curCode, curDenom, imageName, currency
 	// process currency image. Get labels and text extracts.
 	gcsImageUri := fmt.Sprintf("gs://%s/%s", config.C.GetString("bucket_name"), imageName)
 	imgProcRes, err := ProcessImage(lang, mc.visionService, gcsImageUri)
-	if err != nil{
+	if err != nil {
 		if err = models.Currency.UpdateStatus(mc.mongoSession, currencyId, "failed"); err != nil {
 			util.Println("Failed to update currency status")
 		}
@@ -95,7 +94,7 @@ func (mc *MintController) ProcessCurrency(curCode, curDenom, imageName, currency
 	// extract tokens from text annotation
 	var tokens = ProcessText(imgProcRes.Responses[0].TextAnnotations)
 
-	result, err := ProcessMoney(curCode, curDenom, tokens, imgProcRes.Responses[0].LabelAnnotations); 
+	result, err := ProcessMoney(curCode, curDenom, tokens, imgProcRes.Responses[0].LabelAnnotations)
 	util.Println(result, err)
 	if err != nil {
 		if err = models.Currency.UpdateStatus(mc.mongoSession, currencyId, "failed"); err != nil {
@@ -108,8 +107,8 @@ func (mc *MintController) ProcessCurrency(curCode, curDenom, imageName, currency
 // Process a new currency
 func (mc *MintController) Process(c *extend.Context) error {
 
-	// TODO: get address from session
-	var address = "test-address"
+	// TODO: get user id from session
+	var userId = models.NewId()
 	var imageName string
 
 	// get currency image
@@ -142,10 +141,10 @@ func (mc *MintController) Process(c *extend.Context) error {
 
 	// create currency entry
 	currency := &models.CurrencyModel{
-		Id: models.NewId(),
-		Address: address,
-		ImageID: imageName, 
-		Code: curCode,
+		Id:      models.NewId(),
+		UserId:  userId,
+		ImageID: imageName,
+		Code:    curCode,
 	}
 
 	if err = models.Currency.Create(mc.mongoSession, currency); err != nil {
@@ -157,6 +156,6 @@ func (mc *MintController) Process(c *extend.Context) error {
 
 	return c.JSON(201, extend.H{
 		"status": "processing",
-		"id": currency.Id.Hex(),	
+		"id":     currency.Id.Hex(),
 	})
 }
