@@ -5,11 +5,11 @@ import (
 	"regexp"
 	"strings"
 
-	"bitbucket.org/ellcrys/keygenie/extend"
+	"github.com/ellcrys/openmint/extend"
 	"github.com/labstack/echo"
 )
 
-var errors = map[string]map[string]string {
+var errors = map[string]map[string]string{
 	"en": map[string]string{
 		"e500": "something bad has happened on our end",
 		"e001": "could not parse request body",
@@ -17,6 +17,15 @@ var errors = map[string]map[string]string {
 		"e003": "currency code is required",
 		"e004": "currency code is invalid",
 		"e005": "currency denomination is unrecognized",
+		"e006": "email is not available",
+		"e007": "email and password are required",
+		"e008": "user email or password are invalid",
+
+		"Fullname: non zero.*": "full_name:fullname is required",
+		"Email: non zero.*":    "email:email is required",
+		"Email:.*as email":     "email:email is not valid",
+		"Password: non zero.*": "password:password is required",
+		".*isValidPassword":    "password:password must have atleast 6 characters",
 	},
 }
 
@@ -34,18 +43,18 @@ func GetError(lang, code string) string {
 }
 
 type HTTPError struct {
-	Msg 		string
-	Code 		string
-	StatusCode 	int
-	Hint 		string
-	Param 		string
+	Msg        string
+	Code       string
+	StatusCode int
+	Hint       string
+	Param      string
 }
 
 type ErrorData struct {
-	Message string 	`json:"message"`
-	Code 	string  `json:"code"`
-	Hint 	string  `json:"hint,omitempty"`
-	Param 	string 	`json:"param,omitempty"`
+	Message string `json:"message"`
+	Code    string `json:"code"`
+	Hint    string `json:"hint,omitempty"`
+	Param   string `json:"param,omitempty"`
 }
 
 type ErrorObj struct {
@@ -57,7 +66,7 @@ func NewHTTPError(lang string, statusCode int, code string) *HTTPError {
 	if code != "" {
 		msg = GetError(lang, code)
 	}
-	return &HTTPError{ Msg: msg, Code: code, StatusCode: statusCode }
+	return &HTTPError{Msg: msg, Code: code, StatusCode: statusCode}
 }
 
 func (e *HTTPError) Error() string {
@@ -92,13 +101,13 @@ func ValidationError(c *extend.Context, err error) error {
 }
 
 func HandleError(e *echo.Echo) {
-	e.SetHTTPErrorHandler(func(err error, c echo.Context){
+	e.SetHTTPErrorHandler(func(err error, c echo.Context) {
 
 		if err == echo.ErrNotFound {
 			c.JSON(404, ErrorObj{
 				Error: ErrorData{
 					Message: "endpoint not found",
-					Code: "e404",
+					Code:    "e404",
 				},
 			})
 			return
@@ -108,7 +117,7 @@ func HandleError(e *echo.Echo) {
 			c.JSON(404, ErrorObj{
 				Error: ErrorData{
 					Message: "request method not supported",
-					Code: "e404",
+					Code:    "e404",
 				},
 			})
 			return
@@ -118,12 +127,12 @@ func HandleError(e *echo.Echo) {
 			c.JSON(httpErr.StatusCode, ErrorObj{
 				Error: ErrorData{
 					Message: httpErr.Error(),
-					Code: httpErr.Code,
-					Hint: httpErr.Hint,
-					Param: httpErr.Param,
+					Code:    httpErr.Code,
+					Hint:    httpErr.Hint,
+					Param:   httpErr.Param,
 				},
 			})
-			return 
+			return
 		}
 
 		// unhandled error
@@ -131,7 +140,7 @@ func HandleError(e *echo.Echo) {
 		c.JSON(404, ErrorObj{
 			Error: ErrorData{
 				Message: "something bad has happened on our end",
-				Code: "e500",
+				Code:    "e500",
 			},
 		})
 		return

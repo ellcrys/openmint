@@ -1,13 +1,9 @@
-// Bootstrap file for tests. Declate common resources here
-package test
+package integration
 
 import (
-	//"github.com/ellcrys/openmint/www"
+	"github.com/ellcrys/openmint/test/common"
 )
 
 func init() {
-
-	// initialize app test config
-	//www.App(true, true)
-
+	common.InitTestPackage()
 }

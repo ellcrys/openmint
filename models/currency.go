@@ -21,6 +21,15 @@ var (
 	Currency = CurrencyModel{}
 )
 
+func (m *CurrencyModel) EnsureIndex(ses *mgo.Session) {
+	ses.SetMode(mgo.Monotonic, true)
+	colName := config.C.GetString("mongo_currency_collection")
+	c := ses.DB(config.C.GetString("mongo_database")).C(colName)
+	if c.EnsureIndexKey("code", "suggested_denom") != nil {
+		panic("failed to ensure index in "+colName+" collection")
+	}
+}
+
 // find by a field name 
 func (m *CurrencyModel) FindByField(ses *mgo.Session, field, value string) (*CurrencyModel, error) {
 	ses.SetMode(mgo.Monotonic, true)

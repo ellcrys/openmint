@@ -4,3 +4,5 @@ gin-bin
 README_INTERNAL.MD
 openmint
 start.sh
+run_test.sh
+tmp/*
