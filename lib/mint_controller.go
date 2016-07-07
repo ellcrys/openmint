@@ -18,6 +18,8 @@ import (
 	"gopkg.in/mgo.v2"
 )
 
+const NotMultipart = "request Content-Type isn't multipart/form-data"
+
 type MintController struct {
 	mongoSession   *mgo.Session
 	storageService *storage.Service
@@ -114,7 +116,8 @@ func (mc *MintController) Process(c *extend.Context) error {
 	// get currency image
 	currencyImg, err := c.Echo().FormFile("currency_image")
 	if err != nil {
-		if err == http.ErrMissingFile {
+		util.Println(err)
+		if err == http.ErrMissingFile || err.Error() == NotMultipart {
 			return config.NewHTTPError(c.Lang(), 400, "e002")
 		}
 		return config.NewHTTPError(c.Lang(), 500, "e500")
@@ -124,8 +127,16 @@ func (mc *MintController) Process(c *extend.Context) error {
 	curCode := c.Echo().FormValue("currency_code")
 	if len(strings.TrimSpace(curCode)) == 0 {
 		return config.NewHTTPError(c.Lang(), 400, "e003")
-	} else if !IsValidCode(strings.ToUpper(curCode)) {
+	}
+
+	// currency code must be known
+	if !IsValidCode(strings.ToUpper(curCode)) {
 		return config.NewHTTPError(c.Lang(), 400, "e004")
+	}
+
+	// currency code must have meta definition
+	if !util.InStringSlice(GetDefinedCurrencies(), strings.ToUpper(curCode)) {
+		return config.NewHTTPError(c.Lang(), 400, "e009")
 	}
 
 	// currency denomination (optional)
