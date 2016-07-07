@@ -10,6 +10,7 @@ import (
 )
 
 func TestHasTextMarks(t *testing.T) {
+	lib.SetCurrencyMeta(fixtures.TestCurrencyMeta)
 	g := Goblin(t)
 	RegisterFailHandler(func(m string, _ ...int) { g.Fail(m) })
 	g.Describe("HasTextMarks()", func() {
@@ -40,6 +41,7 @@ func TestJoinToken(t *testing.T) {
 }
 
 func TestExtractSerial(t *testing.T) {
+	lib.SetCurrencyMeta(fixtures.TestCurrencyMeta)
 	g := Goblin(t)
 	RegisterFailHandler(func(m string, _ ...int) { g.Fail(m) })
 	g.Describe("ExtractSerial()", func() {
@@ -185,6 +187,7 @@ func TestExtractSerial(t *testing.T) {
 }
 
 func TestDetermineDenomination(t *testing.T) {
+	lib.SetCurrencyMeta(fixtures.TestCurrencyMeta)
 	g := Goblin(t)
 	RegisterFailHandler(func(m string, _ ...int) { g.Fail(m) })
 	g.Describe("DetermineDenomination()", func() {
