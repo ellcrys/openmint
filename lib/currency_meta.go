@@ -8,38 +8,38 @@ import (
 	"github.com/ellcrys/util"
 )
 
-var currencyMeta = map[string]map[string]interface{}{  
+var currencyMeta = map[string]map[string]interface{}{
 	"ALL": map[string]interface{}{},
-  	"DZD": map[string]interface{}{},
-    "ARS": map[string]interface{}{},
-    "AUD": map[string]interface{}{},
-    "BSD": map[string]interface{}{
-    	"lang": "en",
+	"DZD": map[string]interface{}{},
+	"ARS": map[string]interface{}{},
+	"AUD": map[string]interface{}{},
+	"BSD": map[string]interface{}{
+		"lang": "en",
 		"denominations": map[string]interface{}{
 			"1": map[string]interface{}{
 				"join_token_method": "no",
-				"rx": []string{"(?i)one", "(?i)sir", "(?i)lynden", "(?i)pindling"},
+				"rx":                []string{"(?i)one", "(?i)sir", "(?i)lynden", "(?i)pindling"},
 			},
-		},     
-		"text_marks": []string{ "(?i)bahamas", "(?i)central", "(?i)bank" },
+		},
+		"text_marks": []string{"(?i)bahamas", "(?i)central", "(?i)bank"},
 		"serial": map[string]interface{}{
-			"join_token_method": "no_delimiter", 
-			"rx": ".*([A-Z]{1}[0-9]{6}).*",
-			"rx_group": 1, 
-			"filters": []string{},
-		},	
+			"join_token_method": "no_delimiter",
+			"rx":                ".*([A-Z]{1}[0-9]{6}).*",
+			"rx_group":          1,
+			"filters":           []string{},
+		},
 	},
-    "BHD": map[string]interface{}{},
-    "BDT": map[string]interface{}{},
-    "AMD": map[string]interface{}{},
-    "BBD": map[string]interface{}{},
-    "BMD": map[string]interface{}{},
-    "BTN": map[string]interface{}{},
-    "BOB": map[string]interface{}{},
-    "BWP": map[string]interface{}{},
-    "BZD": map[string]interface{}{},
-    "SBD": map[string]interface{}{},
-    "BND": map[string]interface{}{},
+	"BHD": map[string]interface{}{},
+	"BDT": map[string]interface{}{},
+	"AMD": map[string]interface{}{},
+	"BBD": map[string]interface{}{},
+	"BMD": map[string]interface{}{},
+	"BTN": map[string]interface{}{},
+	"BOB": map[string]interface{}{},
+	"BWP": map[string]interface{}{},
+	"BZD": map[string]interface{}{},
+	"SBD": map[string]interface{}{},
+	"BND": map[string]interface{}{},
 	"MMK": map[string]interface{}{},
 	"BIF": map[string]interface{}{},
 	"KHR": map[string]interface{}{},
@@ -112,114 +112,114 @@ var currencyMeta = map[string]map[string]interface{}{
 	"NZD": map[string]interface{}{},
 	"NIO": map[string]interface{}{},
 	"NGN": map[string]interface{}{
-    	"lang": "en",
+		"lang": "en",
 		"denominations": map[string]interface{}{
 			"5": map[string]interface{}{
-				"fuzzy": NewFuzzyModel([]string{ "five", "alhaji", "sir", "abubakar", "tafawa", "balewa" }, 2),
-				"fuzzy_ignore": []string{ "(?i)[^f]i[a-z]{0,1}e" },
+				"fuzzy":             NewFuzzyModel([]string{"five", "alhaji", "sir", "abubakar", "tafawa", "balewa"}, 2),
+				"fuzzy_ignore":      []string{"(?i)[^f]i[a-z]{0,1}e"},
 				"join_token_method": "no",
-				"rx": []string{"(?i)five|sir|abubakar|balewa", "(?i)tafawa|alhaji|balewa", "(?i)naira|central"},
+				"rx":                []string{"(?i)five|sir|abubakar|balewa", "(?i)tafawa|alhaji|balewa", "(?i)naira|central"},
 			},
 			"10": map[string]interface{}{
-				"fuzzy": NewFuzzyModel([]string{ "ten", "alvan", "ikoku" }, 2),
+				"fuzzy":             NewFuzzyModel([]string{"ten", "alvan", "ikoku"}, 2),
 				"join_token_method": "no_delimiter",
-				"rx2": []string{ "(?i)((?<!cen)ten)|alvan|ikoku","(?i)ikoku|alvan|1900|1971", "(?i)central|bank|currency|naira" },
+				"rx2":               []string{"(?i)((?<!cen)ten)|alvan|ikoku", "(?i)ikoku|alvan|1900|1971", "(?i)central|bank|currency|naira"},
 			},
 			"20": map[string]interface{}{
-				"fuzzy": NewFuzzyModel([]string{ "twenty","general","murtala","muhammed" }, 2),
-				"fuzzy_ignore": []string{ "(?i)c?e.*tral" },
+				"fuzzy":             NewFuzzyModel([]string{"twenty", "general", "murtala", "muhammed"}, 2),
+				"fuzzy_ignore":      []string{"(?i)c?e.*tral"},
 				"join_token_method": "no_delimiter",
-				"rx": []string{"(?i)twenty|muhammed|murtala|general|1938|1976", "(?i)central|bank|currency|naira|nigeria"},
+				"rx":                []string{"(?i)twenty|muhammed|murtala|general|1938|1976", "(?i)central|bank|currency|naira|nigeria"},
 			},
 			"50": map[string]interface{}{
-				"fuzzy": NewFuzzyModel([]string{ "fifty" }, 2),
+				"fuzzy":             NewFuzzyModel([]string{"fifty"}, 2),
 				"join_token_method": "no",
-				"rx": []string{"(?i)fifty", "(?i)central|bank|currency|naira"},
+				"rx":                []string{"(?i)fifty", "(?i)central|bank|currency|naira"},
 			},
 			"100": map[string]interface{}{
-				"fuzzy": NewFuzzyModel([]string{ "hundred", "one", "obafemi", "awolowo","chief" }, 2),
+				"fuzzy":             NewFuzzyModel([]string{"hundred", "one", "obafemi", "awolowo", "chief"}, 2),
 				"join_token_method": "no_delimiter",
-				"rx": []string{"(?i)hundred|one|1909|1987|chief|obafemi|awolowo", "(?i)chief|obafemi|awolowo", "(?i)currency|naira|central|bank"},
+				"rx":                []string{"(?i)hundred|one|1909|1987|chief|obafemi|awolowo", "(?i)chief|obafemi|awolowo", "(?i)currency|naira|central|bank"},
 			},
 			"200": map[string]interface{}{
-				"fuzzy": NewFuzzyModel([]string{ "two", "hundred", "sir", "alhaji", "ahmadu", "bello" }, 2),
-				"fuzzy_ignore": []string{ "(?i)i[^0-9]{1,}r" },
+				"fuzzy":             NewFuzzyModel([]string{"two", "hundred", "sir", "alhaji", "ahmadu", "bello"}, 2),
+				"fuzzy_ignore":      []string{"(?i)i[^0-9]{1,}r"},
 				"join_token_method": "no_delimiter",
-				"rx": []string{"(?i)hundred|two|sir|alhaji|ahmadu|bello", "(?i)\b200\b|ahmadu|bello|1909|1966", "(?i)nigeria|currency|naira"},
+				"rx":                []string{"(?i)hundred|two|sir|alhaji|ahmadu|bello", "(?i)\b200\b|ahmadu|bello|1909|1966", "(?i)nigeria|currency|naira"},
 			},
 			"500": map[string]interface{}{
-				"fuzzy": NewFuzzyModel([]string{ "nnamdi", "azikiwe", "hundred", "five" }, 2),
+				"fuzzy":             NewFuzzyModel([]string{"nnamdi", "azikiwe", "hundred", "five"}, 2),
 				"join_token_method": "no_delimiter",
-				"rx": []string{"(?i)five|nnamdi|azikiwe|500", "(?i)hundred|nnamdi|azikiwe"},
+				"rx":                []string{"(?i)five|nnamdi|azikiwe|500", "(?i)hundred|nnamdi|azikiwe"},
 			},
 			"1000": map[string]interface{}{
-				"fuzzy": NewFuzzyModel([]string{ "one", "thousand", "naira" }, 2),
+				"fuzzy":             NewFuzzyModel([]string{"one", "thousand", "naira"}, 2),
 				"join_token_method": "no_delimiter",
-				"rx": []string{"(?i)thousand","(?i)one", "(?i)central|naira|nigeria"},
+				"rx":                []string{"(?i)thousand", "(?i)one", "(?i)central|naira|nigeria"},
 			},
-		},     
+		},
 		"text_marks": []string{},
 		"serial": map[string]interface{}{
-			"join_token_method": "no_delimiter", 
-			"rx": `([A-Z]{2}[0-9]{6,7}|[0-9]{6})`,
-			"rx_group": 1,
-			"filters": []string{},
+			"join_token_method": "no_delimiter",
+			"rx":                `([A-Z]{2}[0-9]{6,7}|[0-9]{6})`,
+			"rx_group":          1,
+			"filters":           []string{},
 			"rx_5": map[string]interface{}{
-				"rx": `([A-Z]{2}[0-9]{7})`,
-				"rx_group": 1,
+				"rx":                `([A-Z]{2}[0-9]{7})`,
+				"rx_group":          1,
 				"join_token_method": "no_delimiter",
-				"filters": []string{},
+				"filters":           []string{},
 			},
 			"rx_20": map[string]interface{}{
-				"rx2": `([A-Z]{2}[0-9]{7})|([A-Z]{2}[0-9]{6})`,
-				"rx2_from_right": true,
-				"rx_group": 1,
+				"rx2":               `([A-Z]{2}[0-9]{7})|([A-Z]{2}[0-9]{6})`,
+				"rx2_from_right":    true,
+				"rx_group":          1,
 				"join_token_method": "no_delimiter",
-				"match_filters": []string{"remove-empty"},
-				"filters": []string{},
+				"match_filters":     []string{"remove-empty"},
+				"filters":           []string{},
 			},
 			"rx_50": map[string]interface{}{
-				"rx": `([A-Z]{2}[0-9]{6,7})`,
-				"rx_group": 1,
+				"rx":                `([A-Z]{2}[0-9]{6,7})`,
+				"rx_group":          1,
 				"join_token_method": "no_delimiter",
-				"filters": []string{},
+				"filters":           []string{},
 			},
 			"rx_100": map[string]interface{}{
-				"rx2": `(?:(?i:[A-Z])?([A-Z]{2}[0-9]{7})[^0-9])|(?:(?:[A-Z]{2,})?([0-9]{6})(?:[0-9]{2})?)`,
-				"remove_tokens": []string{ "1987", "1909", "2014", "1914" },  // remove year
-				"rx2_from_right": true,
-				"rx_group": 1,
+				"rx2":               `(?:(?i:[A-Z])?([A-Z]{2}[0-9]{7})[^0-9])|(?:(?:[A-Z]{2,})?([0-9]{6})(?:[0-9]{2})?)`,
+				"remove_tokens":     []string{"1987", "1909", "2014", "1914"}, // remove year
+				"rx2_from_right":    true,
+				"rx_group":          1,
 				"join_token_method": "no_delimiter",
-				"match_filters": []string{"remove-empty"},
-				"filters": []string{},
+				"match_filters":     []string{"remove-empty"},
+				"filters":           []string{},
 			},
 			"rx_200": map[string]interface{}{
-				"rx2": `(?:(?i:[A-Z])?([A-Z]{2}[0-9]{7})[^0-9])|(?:(?:[A-Z]{2,})?([0-9]{6})(?:[0-9]{2})?)`,
-				"remove_tokens": []string{ "1909", "1966" },
-				"rx2_from_right": true,
-				"rx_group": 1,
+				"rx2":               `(?:(?i:[A-Z])?([A-Z]{2}[0-9]{7})[^0-9])|(?:(?:[A-Z]{2,})?([0-9]{6})(?:[0-9]{2})?)`,
+				"remove_tokens":     []string{"1909", "1966"},
+				"rx2_from_right":    true,
+				"rx_group":          1,
 				"join_token_method": "no_delimiter",
-				"match_filters": []string{"remove-empty"},
-				"filters": []string{},
+				"match_filters":     []string{"remove-empty"},
+				"filters":           []string{},
 			},
 			"rx_500": map[string]interface{}{
-				"rx2": `(?:(?:[A-Z]{2,})?([0-9]{6})(?i:[a-z]|[0-9]{2})?)`,
-				"remove_tokens": []string{ "1904", "1996", "[[:punct:]]" },  
-				"rx2_from_right": true,
-				"rx_group": 1,
+				"rx2":               `(?:(?:[A-Z]{2,})?([0-9]{6})(?i:[a-z]|[0-9]{2})?)`,
+				"remove_tokens":     []string{"1904", "1996", "[[:punct:]]"},
+				"rx2_from_right":    true,
+				"rx_group":          1,
 				"join_token_method": "no_delimiter",
-				"match_filters": []string{},
-				"filters": []string{},
+				"match_filters":     []string{},
+				"filters":           []string{},
 			},
 			"rx_1000": map[string]interface{}{
-				"rx": `(?:(?:[A-Z]{2,}|[0-9]{2,})?([0-9]{6})(?i:[a-z])?)`,
-				"remove_tokens": []string{ "[[:punct:]]" },  
-				"rx_group": 1,
+				"rx":                `(?:(?:[A-Z]{2,}|[0-9]{2,})?([0-9]{6})(?i:[a-z])?)`,
+				"remove_tokens":     []string{"[[:punct:]]"},
+				"rx_group":          1,
 				"join_token_method": "no_delimiter",
-				"match_filters": []string{},
-				"filters": []string{},
+				"match_filters":     []string{},
+				"filters":           []string{},
 			},
-		},	
+		},
 	},
 	"NOK": map[string]interface{}{},
 	"PKR": map[string]interface{}{},
@@ -318,6 +318,17 @@ func SetCurrencyMeta(newMeta map[string]map[string]interface{}) {
 	currencyMeta = newMeta
 }
 
+// Get a list of all currency code with defined meta data
+func GetDefinedCurrencies() []string {
+	var definedCurrencies []string
+	for cur, meta := range currencyMeta {
+		if len(meta) != 0 {
+			definedCurrencies = append(definedCurrencies, cur)
+		}
+	}
+	return definedCurrencies
+}
+
 // Check if a currency code is valid
 func IsValidCode(code string) bool {
 	for curName, _ := range currencyMeta {
@@ -328,7 +339,7 @@ func IsValidCode(code string) bool {
 	return false
 }
 
-// Check if currency denomination is 
+// Check if currency denomination is
 // valid for the currency code supplied.
 func IsValidDenomination(curCode string, denom int) bool {
 
@@ -352,6 +363,7 @@ func GetCurrencyLang(curCode string) string {
 	if curMeta, set := currencyMeta[curCode]; set {
 		return curMeta["lang"].(string)
 	}
+
 	return ""
 }
 
@@ -361,12 +373,12 @@ func GetCurrencyDenoms(curCode string) []string {
 		var denoms = util.GetMapKeys(curMeta["denominations"].(map[string]interface{}))
 		var ints []int
 		for _, str := range denoms {
-		    i, _ := strconv.Atoi(str)
-			ints = append(ints, i) 
+			i, _ := strconv.Atoi(str)
+			ints = append(ints, i)
 		}
 		sort.Ints(ints)
 		for i, anInt := range ints {
-		   denoms[i] = fmt.Sprintf("%d", anInt)
+			denoms[i] = fmt.Sprintf("%d", anInt)
 		}
 		return denoms
 	}
