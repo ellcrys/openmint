@@ -20,6 +20,7 @@ var errors = map[string]map[string]string{
 		"e006": "email is not available",
 		"e007": "email and password are required",
 		"e008": "user email or password are invalid",
+		"e009": "currency code is not currently supported",
 
 		"Fullname: non zero.*": "full_name:fullname is required",
 		"Email: non zero.*":    "email:email is required",
