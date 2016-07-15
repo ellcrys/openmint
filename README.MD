@@ -102,8 +102,10 @@ search is run before textual/token search and as such will be overriden if textu
 returns a result. 
 
 ```go
+// key: space delimited RGB values
+// value: maximum color distance allowed.
 map[string]float64{
-    "184,156,135": 10.0,
+    "184,156,135": 10.0,   
     "182,172,145": 10.0,
     "248,198,148": 10.0,
     "240,206,142": 10.0,
