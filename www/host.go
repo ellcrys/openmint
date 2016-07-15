@@ -43,9 +43,14 @@ var (
 	// mongo collections
 	CurrencyColName      = util.Env("MONGO_CURRENCY_COL", "currency")
 	CloudMintUserColName = util.Env("MONGO_CLOUDMINT_USER_COL", "cloudmint_user")
+	TwitterAuthColName   = util.Env("MONGO_TWITTER_AUTH_COL", "twitter_auth")
 
 	// others
-	HMACKey = util.Env("HMAC_KEY", "")
+	HMACKey          = util.Env("HMAC_KEY", "")
+	FBAppId          = util.Env("FB_APP_ID", "")
+	FBAppToken       = util.Env("FB_APP_TOKEN", "")
+	TwitterConKey    = util.Env("TWITTER_CONSUMER_KEY", "")
+	TwitterConSecret = util.Env("TWITTER_CONSUMER_SECRET", "")
 )
 
 // fetch application config
@@ -84,7 +89,7 @@ func fetchConfig() {
 	}
 
 	if resp.StatusCode != 200 {
-		log.Println("failed: " + data["message"].(string))
+		log.Println("failed to fetch config. ", data)
 		os.Exit(1)
 	}
 
@@ -186,7 +191,12 @@ func App(testMode, runSeed bool) (*echo.Echo, *mgo.Session) {
 	config.C.Add("mongo_database", MongoDatabase)
 	config.C.Add("mongo_currency_collection", CurrencyColName)
 	config.C.Add("mongo_cloudmint_user_col", CloudMintUserColName)
+	config.C.Add("mongo_twitter_auth_col", TwitterAuthColName)
 	config.C.Add("hmac_key", HMACKey)
+	config.C.Add("fb_app_token", FBAppToken)
+	config.C.Add("fb_app_id", FBAppId)
+	config.C.Add("twitter_con_key", TwitterConKey)
+	config.C.Add("twitter_con_secret", TwitterConSecret)
 
 	// mongo connection
 	mongoSession, err := GetMongoSession(MongoDBHosts, MongoDatabase, MongoUsername, MongoPassword)
@@ -200,7 +210,7 @@ func App(testMode, runSeed bool) (*echo.Echo, *mgo.Session) {
 
 	// initialize controllers
 	appCntrl := lib.NewAppController()
-	policyCntrl := lib.NewPolicyController(appCntrl)
+	policyCntrl := lib.NewPolicyController(mongoSession)
 	mintCntrl := lib.NewMintController(mongoSession, gStorageClient, gVisionClient)
 	userCntrl := lib.NewUserController(mongoSession)
 	authCntrl := lib.NewAuthController(mongoSession)
@@ -210,15 +220,20 @@ func App(testMode, runSeed bool) (*echo.Echo, *mgo.Session) {
 
 	// auth route
 	var authRoute = v1.Group("/auth")
-	authRoute.POST("/login", extend.Handle(authCntrl.UserAuth))
+	authRoute.POST("/social", extend.Handle(authCntrl.SocialAuth))
+	authRoute.GET("/twitter/request_token", extend.Handle(authCntrl.GetTwitterRequestToken))
+	authRoute.GET("/twitter/cb", extend.Handle(authCntrl.TwitterCallback))
+	authRoute.GET("/twitter/done", extend.Handle(authCntrl.Blank))
+	authRoute.GET("/me", extend.Handle(authCntrl.GetUser), UseAuthPolicy(policyCntrl)...)
 
 	// user route
 	var userRoute = v1.Group("/users")
-	userRoute.POST("", extend.Handle(userCntrl.Create))
+	userRoute.GET("/currencies", extend.Handle(userCntrl.GetCurrencies), UseAuthPolicy(policyCntrl)...)
 
 	// currency processing route
 	var mintRoute = v1.Group("/mint")
-	mintRoute.POST("/new", extend.Handle(mintCntrl.Process))
+	mintRoute.POST("/new", extend.Handle(mintCntrl.Process), UseAuthPolicy(policyCntrl)...)
+	mintRoute.GET("/supported_currencies", extend.Handle(mintCntrl.GetSupportedCurrencies), UseAuthPolicy(policyCntrl)...)
 
 	return router, mongoSession
 }

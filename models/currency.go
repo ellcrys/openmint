@@ -13,15 +13,17 @@ type Vote struct {
 }
 
 type CurrencyModel struct {
-	Id             bson.ObjectId `json:"id" bson:"_id"`
-	UserId         bson.ObjectId `json:"user_id" bson:"user_id"`
-	ImageID        string        `json:"image_id" bson:"image_id"`
-	Code           string        `json:"code" bson:"code"`
-	SuggestedDenom int           `json:"suggested_denom" bson:"suggested_denom"`
-	Status         string        `json:"status" bson:"status"`
-	Votes          []Vote        `json:"votes" bson:"votes"`
-	Multiplier     float64       `json:"multiplier" bson:"multiplier"`
-	CreatedAt      time.Time     `json:"created_at" bson:"created_at"`
+	Id               bson.ObjectId `json:"id" bson:"_id"`
+	UserId           bson.ObjectId `json:"user_id" bson:"user_id"`
+	ImageURL         string        `json:"image_url" bson:"image_url"`
+	OriginalImageURL string        `json:"original_image_url" bson:"original_image_url"`
+	CurrencyCode     string        `json:"currency_code" bson:"currency_code"`
+	Denomination     string        `json:"denomination" bson:"denomination"`
+	Serial           string        `json:"serial" bson:"serial"`
+	Status           string        `json:"status" bson:"status"`
+	Votes            []Vote        `json:"votes" bson:"votes"`
+	Multiplier       float64       `json:"multiplier" bson:"multiplier"`
+	CreatedAt        time.Time     `json:"created_at" bson:"created_at"`
 }
 
 var (
@@ -32,27 +34,45 @@ func (m *CurrencyModel) EnsureIndex(ses *mgo.Session) {
 	ses.SetMode(mgo.Monotonic, true)
 	colName := config.C.GetString("mongo_currency_collection")
 	c := ses.DB(config.C.GetString("mongo_database")).C(colName)
-	if c.EnsureIndexKey("user_id", "code", "suggested_denom") != nil {
+
+	index := mgo.Index{
+		Key: []string{"currency_code", "denomination", "serial"},
+	}
+
+	err := c.EnsureIndex(index)
+	if err != nil {
+		panic("failed to ensure compound index in " + colName + " collection")
+	}
+
+	if c.EnsureIndexKey("user_id") != nil {
 		panic("failed to ensure index in " + colName + " collection")
 	}
+}
+
+func (m *CurrencyModel) FindCurrency(ses *mgo.Session, curCode, denomination, serial string) (*CurrencyModel, error) {
+	ses.SetMode(mgo.Monotonic, true)
+	c := ses.DB(config.C.GetString("mongo_database")).C(config.C.GetString("mongo_currency_collection"))
+	result := CurrencyModel{}
+	err := c.Find(bson.M{"currency_code": curCode, "denomination": denomination, "serial": serial}).One(&result)
+	return &result, err
 }
 
 // find by a field name
 func (m *CurrencyModel) FindByField(ses *mgo.Session, field, value string) (*CurrencyModel, error) {
 	ses.SetMode(mgo.Monotonic, true)
 	c := ses.DB(config.C.GetString("mongo_database")).C(config.C.GetString("mongo_currency_collection"))
-	asset := CurrencyModel{}
-	err := c.Find(bson.M{field: value}).One(&asset)
-	return &asset, err
+	result := CurrencyModel{}
+	err := c.Find(bson.M{field: value}).One(&result)
+	return &result, err
 }
 
 // find by id
 func (m *CurrencyModel) FindById(ses *mgo.Session, id string) (*CurrencyModel, error) {
 	ses.SetMode(mgo.Monotonic, true)
 	c := ses.DB(config.C.GetString("mongo_database")).C(config.C.GetString("mongo_currency_collection"))
-	asset := CurrencyModel{}
-	err := c.FindId(bson.ObjectIdHex(id)).One(&asset)
-	return &asset, err
+	result := CurrencyModel{}
+	err := c.FindId(bson.ObjectIdHex(id)).One(&result)
+	return &result, err
 }
 
 // add new app entry
@@ -78,4 +98,12 @@ func (m *CurrencyModel) UpdateField(ses *mgo.Session, id, field, newValue string
 
 func (m *CurrencyModel) UpdateStatus(ses *mgo.Session, id, newStatus string) error {
 	return m.UpdateField(ses, id, "status", newStatus)
+}
+
+func (m *CurrencyModel) FindWithDateSortAndSkip(ses *mgo.Session, userId, sort string, limit, skip int) ([]CurrencyModel, error) {
+	ses.SetMode(mgo.Monotonic, true)
+	c := ses.DB(config.C.GetString("mongo_database")).C(config.C.GetString("mongo_currency_collection"))
+	results := []CurrencyModel{}
+	err := c.Find(bson.M{"user_id": bson.ObjectIdHex(userId)}).Limit(limit).Sort(sort).Skip(skip).All(&results)
+	return results, err
 }

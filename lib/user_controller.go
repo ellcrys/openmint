@@ -2,14 +2,12 @@
 package lib
 
 import (
-	"time"
+	"strconv"
 
-	"github.com/asaskevich/govalidator"
-	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/ellcrys/openmint/config"
 	"github.com/ellcrys/openmint/extend"
 	"github.com/ellcrys/openmint/models"
-	"golang.org/x/crypto/bcrypt"
+	"github.com/ellcrys/util"
 	"gopkg.in/mgo.v2"
 )
 
@@ -21,55 +19,36 @@ func NewUserController(mongoSession *mgo.Session) *UserController {
 	return &UserController{mongoSession}
 }
 
-// API: 			POST /v1/users
-// Description: 	Create a new cloud mint user.
-// Content-Type: 	application/json
-// Body Params: 	full_name {string}, email {string}, password {string}
-// Response 200: 	id {string}, full_name {string}, email {string}, created_at {Date}
-func (self *UserController) Create(c *extend.Context) error {
+// @API: GET /v1/users/currencies
+// @Description: Get currencies belonging to the authenticated user
+func (self *UserController) GetCurrencies(c *extend.Context) error {
 
-	// parse request body
-	var body models.UserModel
-	if c.BindJSON(&body) != nil {
-		return config.NewHTTPError(c.Lang(), 400, "e001")
+	var authUserId = c.Get("auth_user")
+	var err error
+	var skip = 0
+	var limit = 10
+
+	if _limit := c.Echo().QueryParam("limit"); _limit != "" {
+		limit, err = strconv.Atoi(_limit)
+		if err != nil {
+			return config.NewHTTPError(c.Lang(), 500, "e500")
+		}
 	}
 
-	// validate request body
-	body.MinPasswordLength = 6
-	_, err := govalidator.ValidateStruct(body)
+	if _skip := c.Echo().QueryParam("skip"); _skip != "" {
+		skip, err = strconv.Atoi(_skip)
+		if err != nil {
+			return config.NewHTTPError(c.Lang(), 500, "e500")
+		}
+	}
+
+	skip = skip * limit
+
+	currencies, err := models.Currency.FindWithDateSortAndSkip(self.mongoSession, authUserId, "-created_at", limit, skip)
 	if err != nil {
-		return config.ValidationError(c, err)
-	}
-
-	// find existing user with matching email
-	_, err = models.User.FindByField(self.mongoSession, "email", body.Email)
-	if err == nil {
-		return config.NewHTTPError(c.Lang(), 400, "e006")
-	} else if err != nil && err != mgo.ErrNotFound {
+		util.Println("Failed to fetch currencies. ", err.Error())
 		return config.NewHTTPError(c.Lang(), 500, "e500")
 	}
 
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(body.Password), bcrypt.DefaultCost)
-	if err != nil {
-		return config.NewHTTPError(c.Lang(), 400, "e500")
-	}
-
-	body.Id = models.NewId()
-	body.Password = string(hashedPassword)
-	if err = models.User.Create(self.mongoSession, &body); err != nil {
-		return config.NewHTTPError(c.Lang(), 500, "e500")
-	}
-
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"id":  body.Id.Hex(),
-		"iat": time.Now().Unix(),
-	})
-
-	body.TokenString, err = token.SignedString([]byte(config.C.GetString("hmac_key")))
-	if err != nil {
-		return config.NewHTTPError(c.Lang(), 500, "e500")
-	}
-
-	body.Password = ""
-	return c.JSON(201, body)
+	return c.JSON(200, currencies)
 }

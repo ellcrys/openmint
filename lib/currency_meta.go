@@ -124,6 +124,13 @@ var currencyMeta = map[string]map[string]interface{}{
 				"fuzzy":             NewFuzzyModel([]string{"ten", "alvan", "ikoku"}, 2),
 				"join_token_method": "no_delimiter",
 				"rx2":               []string{"(?i)((?<!cen)ten)|alvan|ikoku", "(?i)ikoku|alvan|1900|1971", "(?i)central|bank|currency|naira"},
+				"colors": map[string]float64{
+					"184,156,135": 10.0,
+					"182,172,145": 10.0,
+					"248,198,148": 10.0,
+					"240,206,142": 10.0,
+					"230,176,130": 10.0,
+				},
 			},
 			"20": map[string]interface{}{
 				"fuzzy":             NewFuzzyModel([]string{"twenty", "general", "murtala", "muhammed"}, 2),
@@ -170,6 +177,7 @@ var currencyMeta = map[string]map[string]interface{}{
 				"join_token_method": "no_delimiter",
 				"filters":           []string{},
 			},
+			"rx_10": "rx_50",
 			"rx_20": map[string]interface{}{
 				"rx2":               `([A-Z]{2}[0-9]{7})|([A-Z]{2}[0-9]{6})`,
 				"rx2_from_right":    true,
@@ -182,6 +190,7 @@ var currencyMeta = map[string]map[string]interface{}{
 				"rx":                `([A-Z]{2}[0-9]{6,7})`,
 				"rx_group":          1,
 				"join_token_method": "no_delimiter",
+				"remove_tokens":     []string{"[[:punct:]]"},
 				"filters":           []string{},
 			},
 			"rx_100": map[string]interface{}{
