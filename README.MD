@@ -93,6 +93,24 @@ Provide a slice of tokens to be ignored when running the extracted
 tokens through the fuzzy model. This is useful for when you need to
 prevent certain words from returning unwanted fuzzy matches. 
 
+##### $currency.denominations.{DENOM}.colors - (optional):
+This option allows you to provide colors that you expect to find
+in an image representing this denomination. You can specify one or more
+colors in RGB space and the maximum distance between the colors being compared.
+If a single color is matched, the denomination is selected. Please note that color
+search is run before textual/token search and as such will be overriden if textual search
+returns a result. 
+
+```go
+map[string]float64{
+    "184,156,135": 10.0,
+    "182,172,145": 10.0,
+    "248,198,148": 10.0,
+    "240,206,142": 10.0,
+    "230,176,130": 10.0,
+}
+```
+
 ##### $currency.denominations.text_marks - (optional): 
 This should optionally contain a slice of tokens that must be
 present in every denomination of a single currency.
