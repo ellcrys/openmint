@@ -144,8 +144,6 @@ match slice through. Useful for performing operations result of the `rx` or `rx2
 patterns.
 
 ##### $currency.denominations.{DENOM}.serial.{rx_DENOM}.remove_tokens
-This should hold a slice of strings to remove from the list of tokens
-is `join_token_method` is `no` or the text if `join_token_method` is either
-`space_delimited` or `no_delimiter`. Regex patterns can also be included. 
+This should hold a slice of strings to remove from the list of tokens. Regex patterns can also be included. 
 Only native regex engine is currently supported. 
 
