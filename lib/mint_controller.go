@@ -60,7 +60,7 @@ func NewMintController(mongoSession *mgo.Session, storageClient *http.Client, vi
 // Store image in google cloud storage.
 // File can be a multipart.File or an os.File.
 // File handle will be closed after save is complete.
-func (mc *MintController) SaveImage(file interface{}) (*storage.Object, error) {
+func (self *MintController) SaveImage(file interface{}) (*storage.Object, error) {
 
 	var fileToSave io.Reader
 	var err error
@@ -90,15 +90,25 @@ func (mc *MintController) SaveImage(file interface{}) (*storage.Object, error) {
 
 	// add object to bucket
 	bucketName := config.C.GetString("bucket_name")
-	if obj, err := mc.storageService.Objects.Insert(bucketName, object).Media(fileToSave).Do(); err == nil {
+	if obj, err := self.storageService.Objects.Insert(bucketName, object).Media(fileToSave).Do(); err == nil {
 		return obj, nil
 	} else {
 		return nil, errors.New("failed to create object in cloud storage. " + err.Error())
 	}
 }
 
+// Delete an image from the primary mint bucket on google storage.
+func (self *MintController) DeleteImage(objName string) error {
+	bucketName := config.C.GetString("bucket_name")
+	if err := self.storageService.Objects.Delete(bucketName, objName).Do(); err == nil {
+		return nil
+	} else {
+		return errors.New("failed to delete object in cloud storage. " + err.Error())
+	}
+}
+
 // Analyze a currency. Determine and extract serial and denomination
-func (mc *MintController) AnalyzeCurrency(curCode, curDenom, imageName string) (map[string]string, error) {
+func (self *MintController) AnalyzeCurrency(curCode, curDenom, imageName string) (map[string]string, error) {
 
 	// get currency language
 	lang := GetCurrencyLang(curCode)
@@ -106,7 +116,7 @@ func (mc *MintController) AnalyzeCurrency(curCode, curDenom, imageName string) (
 	// process currency image. Get labels and text extracts.
 	// imageName = "mumrhVdxIiEMENmGymrMStoYcSgcBXST.jpg"
 	gcsImageUri := fmt.Sprintf("gs://%s/%s", config.C.GetString("bucket_name"), imageName)
-	imgProcRes, err := ProcessImage(lang, mc.visionService, gcsImageUri)
+	imgProcRes, err := ProcessImage(lang, self.visionService, gcsImageUri)
 	if err != nil {
 		return nil, err
 	}
@@ -132,7 +142,7 @@ func (mc *MintController) AnalyzeCurrency(curCode, curDenom, imageName string) (
 }
 
 // Resize image
-func (mc *MintController) ResizeImg(currencyImg *multipart.FileHeader, newWidth int) (*os.File, error) {
+func (self *MintController) ResizeImg(currencyImg *multipart.FileHeader, newWidth int) (*os.File, error) {
 
 	file, _ := currencyImg.Open()
 	defer file.Close()
@@ -172,7 +182,7 @@ func (mc *MintController) ResizeImg(currencyImg *multipart.FileHeader, newWidth 
 // 	status 	{string}: The open mint status
 // 	name 	{string}: The name of the currency image
 // 	link 	{string}: The public link to the currency image
-func (mc *MintController) Process(c *extend.Context) error {
+func (self *MintController) Process(c *extend.Context) error {
 
 	authUserId := c.Get("auth_user")
 
@@ -209,7 +219,7 @@ func (mc *MintController) Process(c *extend.Context) error {
 	}
 
 	// resize image for display in applications
-	smallerImg, err := mc.ResizeImg(currencyImg, 350)
+	smallerImg, err := self.ResizeImg(currencyImg, 350)
 	if err != nil {
 		util.Println(err)
 		return config.NewHTTPError(c.Lang(), 500, "e500")
@@ -218,20 +228,25 @@ func (mc *MintController) Process(c *extend.Context) error {
 	defer os.Remove(smallerImg.Name())
 
 	// save image
-	smallerImgObj, err := mc.SaveImage(smallerImg)
+	smallerImgObj, err := self.SaveImage(smallerImg)
 	if err != nil {
 		return config.NewHTTPError(c.Lang(), 500, "e500")
 	}
 
 	// save original currency image
-	originalImageObj, err := mc.SaveImage(currencyImg)
+	originalImageObj, err := self.SaveImage(currencyImg)
 	if err != nil {
+		go self.DeleteImage(smallerImgObj.Name)
 		return config.NewHTTPError(c.Lang(), 500, "e500")
 	}
 
 	// process image asynchronously
-	analysisResult, err := mc.AnalyzeCurrency(curCode, curDenom, originalImageObj.Name)
+	analysisResult, err := self.AnalyzeCurrency(curCode, curDenom, originalImageObj.Name)
 	if err != nil {
+
+		go self.DeleteImage(smallerImgObj.Name)
+		go self.DeleteImage(originalImageObj.Name)
+
 		if err.Error() == "not money" {
 			return config.NewHTTPError(c.Lang(), 400, "e015")
 		} else {
@@ -240,14 +255,20 @@ func (mc *MintController) Process(c *extend.Context) error {
 	}
 
 	if analysisResult["serial"] == "" {
+		go self.DeleteImage(smallerImgObj.Name)
+		go self.DeleteImage(originalImageObj.Name)
 		return config.NewHTTPError(c.Lang(), 400, "e016")
 	}
 
 	// find matching currency
-	_, err = models.Currency.FindCurrency(mc.mongoSession, curCode, analysisResult["denomination"], analysisResult["serial"])
+	_, err = models.Currency.FindCurrency(self.mongoSession, curCode, analysisResult["denomination"], analysisResult["serial"])
 	if err != nil && err != mgo.ErrNotFound {
+		go self.DeleteImage(smallerImgObj.Name)
+		go self.DeleteImage(originalImageObj.Name)
 		return config.NewHTTPError(c.Lang(), 500, "e500")
 	} else if err == nil {
+		go self.DeleteImage(smallerImgObj.Name)
+		go self.DeleteImage(originalImageObj.Name)
 		return config.NewHTTPError(c.Lang(), 400, "e017")
 	}
 
@@ -263,7 +284,9 @@ func (mc *MintController) Process(c *extend.Context) error {
 		Status:           "awaiting_votes",
 	}
 
-	if err = models.Currency.Create(mc.mongoSession, currency); err != nil {
+	if err = models.Currency.Create(self.mongoSession, currency); err != nil {
+		go self.DeleteImage(smallerImgObj.Name)
+		go self.DeleteImage(originalImageObj.Name)
 		return config.NewHTTPError(c.Lang(), 500, "e500")
 	}
 
@@ -283,7 +306,7 @@ func (mc *MintController) Process(c *extend.Context) error {
 // @Description: 		Get a map of supported currencies and thier denominations
 // @Response 200:
 // 	USD {Array[String]}: A list of denominations
-func (mc *MintController) GetSupportedCurrencies(c *extend.Context) error {
+func (self *MintController) GetSupportedCurrencies(c *extend.Context) error {
 
 	var supportedCurrencies = make(map[string][]string)
 	for _, curCode := range GetDefinedCurrencies() {
