@@ -212,7 +212,7 @@ var currencyMeta = map[string]map[string]interface{}{
 				"filters":           []string{},
 			},
 			"rx_500": map[string]interface{}{
-				"rx2":               `(?:(?:[A-Z]{2,})?([0-9]{6})(?i:[a-z]|[0-9]{2})?)`,
+				"rx2":               `(?:(?i:[a-z]+)?([0-9]{6})(?i:[a-z]+|[0-9]{1,})?)`,
 				"remove_tokens":     []string{"1904", "1996", "[[:punct:]]"},
 				"rx2_from_right":    true,
 				"rx_group":          1,
