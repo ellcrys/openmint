@@ -284,6 +284,10 @@ func ExtractSerial(denomination, curCode string, curTokens []string) (string, er
 	// find serial in the tokens
 	if joinMethod == "no" {
 
+		util.Println("Tokens: ", curTokens)
+
+		var match []string
+
 		for _, token := range curTokens {
 
 			// if token match any of the token pattern in the 'tokens to remove' slice,
@@ -293,34 +297,44 @@ func ExtractSerial(denomination, curCode string, curTokens []string) (string, er
 			}
 
 			if !backtrackEnabled {
-				if match, _ := regexp.MatchString(pattern, token); match {
-					serial = token
-					break
+
+				re := regexp.MustCompile(pattern)
+				if match = re.FindStringSubmatch(token); match != nil {
+
+					// pass through match filters if required
+					match = MatchFilter(match, matchFilters)
+					serial = match[group]
+
+					// pass through filter functions if required
+					serial = Filter(serial, filters)
 				}
 
 			} else {
 
-				var reOpt regexp2.RegexOptions
-				if rightToLeft {
-					reOpt = reOpt | regexp2.RightToLeft
-				}
-
-				re := regexp2.MustCompile(pattern, reOpt)
+				re := regexp2.MustCompile(pattern, 0)
 
 				if rightToLeft {
 					re.RightToLeft()
 				}
 
-				match, _ := re.MatchString(token)
-				if match {
-					serial = token
-					break
+				if m, _ := re.FindStringMatch(token); m != nil {
+
+					for i := 0; i < m.GroupCount(); i++ {
+						grp := m.GroupByNumber(i)
+						match = append(match, grp.String())
+					}
+
+					// pass through match filters if required
+					match = MatchFilter(match, matchFilters)
+					serial = match[group]
+
+					// pass through filter functions if required
+					serial = Filter(serial, filters)
+
 				}
 			}
 		}
 
-		// pass through filter functions if required
-		serial = Filter(serial, filters)
 		return serial, nil
 	}
 
@@ -360,7 +374,6 @@ func ExtractSerial(denomination, curCode string, curTokens []string) (string, er
 			}
 
 			re := regexp2.MustCompile(pattern, reOpt)
-
 			if m, _ := re.FindStringMatch(joinedTokens); m != nil {
 
 				for i := 0; i < m.GroupCount(); i++ {
@@ -373,9 +386,7 @@ func ExtractSerial(denomination, curCode string, curTokens []string) (string, er
 				serial = match[group]
 
 				// pass through filter functions if required
-				if data["filters"] != nil {
-					serial = Filter(serial, filters)
-				}
+				serial = Filter(serial, filters)
 
 				return serial, nil
 			}
@@ -408,7 +419,7 @@ func FuzzySuggestTokens(fuzzyModel *FuzzyModel, tokens []string, tokensToIgnore 
 			}
 		}
 
-		util.Println("Word: ", token, " Suggestion: ", suggestedTokens)
+		// util.Println("Word: ", token, " Suggestion: ", suggestedTokens)
 	}
 	return newTokens
 }
@@ -483,7 +494,7 @@ func DetermineDenomination(curCode string, curTokens []string, imageProps *visio
 		// data must be matched in the image properties supplied.
 		if denomColors, set := data.(map[string]interface{})["colors"]; set {
 			if CompareImageColorWithDenomColors(imageProps, denomColors.(map[string]float64)) {
-				util.Println(">> Color match. Denomination set to -> ", denom)
+				util.Println(">> Found colour match. Denomination set to -> ", denom)
 				result = denom
 			}
 		}
@@ -500,11 +511,11 @@ func DetermineDenomination(curCode string, curTokens []string, imageProps *visio
 			tokens = FuzzySuggestTokens(data.(map[string]interface{})["fuzzy"].(*FuzzyModel), tokens, ignoreTokens)
 		}
 
-		util.Println("Checking Denom: ", denom)
-		for _, t := range tokens {
-			util.Println("[", t, "]")
-		}
-		util.Println("*************************************")
+		// util.Println("Checking Denom: ", denom)
+		// for _, t := range tokens {
+		// 	util.Println("[", t, "]")
+		// }
+		// util.Println("*************************************")
 
 		// join tokens?
 		var joinedTokens = ""
