@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"sort"
 	"strconv"
+	"strings"
 
 	"github.com/ellcrys/util"
 )
@@ -212,11 +213,15 @@ var currencyMeta = map[string]map[string]interface{}{
 				"filters":           []string{},
 			},
 			"rx_500": map[string]interface{}{
-				"rx2":               `(?:(?i:[a-z]+)?([0-9]{6})(?i:[a-z]+|[0-9]{1,})?)`,
-				"remove_tokens":     []string{"1904", "1996", "[[:punct:]]"},
+				"rx2": PipeJoinRegex([]string{
+					`(?:^([0-9]{6})$)`,
+					`(?:(?:[a-z]|^)([0-9]{6})(?i:[a-z])?)`,
+					`(?:(?:[A-Z]|[a-z]+)([0-9]{6})(?:[0-9]{2})?)`,
+				}),
+				"remove_tokens":     []string{"1904", "1996", "[[:punct:]]", "20[0-1]{1}[1-6]{1}"},
 				"rx2_from_right":    true,
 				"rx_group":          1,
-				"join_token_method": "no_delimiter",
+				"join_token_method": "no",
 				"match_filters":     []string{},
 				"filters":           []string{},
 			},
@@ -416,4 +421,9 @@ func GetDenominationData(curCode string) map[string]interface{} {
 		return curMeta["denominations"].(map[string]interface{})
 	}
 	return nil
+}
+
+// Join multiple regex with a pipe
+func PipeJoinRegex(rxs []string) string {
+	return strings.Join(rxs, "|")
 }
