@@ -12,6 +12,7 @@ import (
 	"os"
 	"path"
 	"strings"
+	"time"
 
 	"github.com/disintegration/imaging"
 	"github.com/ellcrys/openmint/config"
@@ -115,11 +116,14 @@ func (self *MintController) AnalyzeCurrency(curCode, curDenom, imageName string)
 
 	// process currency image. Get labels and text extracts.
 	// imageName = "mumrhVdxIiEMENmGymrMStoYcSgcBXST.jpg"
+	startTime := time.Now().Unix()
 	gcsImageUri := fmt.Sprintf("gs://%s/%s", config.C.GetString("bucket_name"), imageName)
 	imgProcRes, err := ProcessImage(lang, self.visionService, gcsImageUri)
 	if err != nil {
 		return nil, err
 	}
+
+	util.Println("Vision Processing Took: ", time.Now().Unix()-startTime)
 
 	// ensure we got a response
 	if len(imgProcRes.Responses) == 0 {
@@ -227,6 +231,8 @@ func (self *MintController) Process(c *extend.Context) error {
 
 	defer os.Remove(smallerImg.Name())
 
+	startTime := time.Now().Unix()
+
 	// save image
 	smallerImgObj, err := self.SaveImage(smallerImg)
 	if err != nil {
@@ -239,6 +245,10 @@ func (self *MintController) Process(c *extend.Context) error {
 		go self.DeleteImage(smallerImgObj.Name)
 		return config.NewHTTPError(c.Lang(), 500, "e500")
 	}
+
+	util.Println("Image Uploaded In: ", time.Now().Unix()-startTime)
+
+	startTime = time.Now().Unix()
 
 	// process image asynchronously
 	analysisResult, err := self.AnalyzeCurrency(curCode, curDenom, originalImageObj.Name)
@@ -253,6 +263,8 @@ func (self *MintController) Process(c *extend.Context) error {
 			return config.NewHTTPError(c.Lang(), 500, "e500")
 		}
 	}
+
+	util.Println("Image Processed In: ", time.Now().Unix()-startTime)
 
 	if analysisResult["serial"] == "" {
 		go self.DeleteImage(smallerImgObj.Name)
