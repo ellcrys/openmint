@@ -14,11 +14,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/asaskevich/govalidator"
 	"github.com/disintegration/imaging"
 	"github.com/ellcrys/openmint/config"
 	"github.com/ellcrys/openmint/extend"
 	"github.com/ellcrys/openmint/models"
 	"github.com/ellcrys/util"
+	"github.com/garyburd/redigo/redis"
 	storage "google.golang.org/api/storage/v1"
 	vision "google.golang.org/api/vision/v1"
 	"gopkg.in/mgo.v2"
@@ -27,8 +29,15 @@ import (
 
 const NotMultipart = "request Content-Type isn't multipart/form-data"
 
+type addVoteBody struct {
+	CurrencyId string `json:"currency_id" valid:"required"`
+	Decision   int    `json:"decision"`
+	VoteId     string `json:"vote_id" valid:"required"`
+}
+
 type MintController struct {
 	mongoSession   *mgo.Session
+	redisPool      *redis.Pool
 	storageService *storage.Service
 	visionService  *vision.Service
 }
@@ -52,10 +61,10 @@ func createVisionService(client *http.Client) *vision.Service {
 }
 
 // Create a new controller instance
-func NewMintController(mongoSession *mgo.Session, storageClient *http.Client, visionClient *http.Client) *MintController {
+func NewMintController(mongoSession *mgo.Session, redisPool *redis.Pool, storageClient *http.Client, visionClient *http.Client) *MintController {
 	storageService := createStorageService(storageClient)
 	visionService := createVisionService(visionClient)
-	return &MintController{mongoSession, storageService, visionService}
+	return &MintController{mongoSession, redisPool, storageService, visionService}
 }
 
 // Store image in google cloud storage.
@@ -177,15 +186,20 @@ func (self *MintController) ResizeImg(currencyImg *multipart.FileHeader, newWidt
 	return tempFile, nil
 }
 
-// @API: 			POST /v1/mint/new
-// @Description: 	Accepts new currency scans and starts processing
-// @Content-Type: 	application/json
-// @Body Params: 	currency_image {file}, currency_denom {string}, currency_code {string}
+// @API: 				POST /v1/mint/new
+// @Description: 		Accepts new currency scans and starts processing
+// @Content-Type: 		application/json
+//
+// @Body (Multipart):
+// 	currency_image 		File: 		The image of the currency
+// 	currency_denom 		String:		The expected denomination on currency
+// 	currency_code 		String:		The currency code (NGN, USD etc)
+//
 // @Response 200:
-// 	id 		{string}: The open mint id of the currency
-// 	status 	{string}: The open mint status
-// 	name 	{string}: The name of the currency image
-// 	link 	{string}: The public link to the currency image
+// 	id 		string: The open mint id of the currency
+// 	status 	string: The open mint status
+// 	name 	string: The name of the currency image
+// 	link 	string: The public link to the currency image
 func (self *MintController) Process(c *extend.Context) error {
 
 	authUserId := c.Get("auth_user")
@@ -302,6 +316,14 @@ func (self *MintController) Process(c *extend.Context) error {
 		return config.NewHTTPError(c.Lang(), 500, "e500")
 	}
 
+	// add currency to the vote queue
+	if err = models.AddToVoteQueue(self.redisPool, currency.Id.Hex()); err != nil {
+		go self.DeleteImage(smallerImgObj.Name)
+		go self.DeleteImage(originalImageObj.Name)
+		go models.Currency.Delete(self.mongoSession, currency.Id.Hex())
+		return config.NewHTTPError(c.Lang(), 500, "e500")
+	}
+
 	return c.JSON(201, extend.H{
 		"id":                 currency.Id.Hex(),
 		"image_url":          fmt.Sprintf("http://storage.googleapis.com/%s/%s", smallerImgObj.Bucket, smallerImgObj.Name),
@@ -326,4 +348,143 @@ func (self *MintController) GetSupportedCurrencies(c *extend.Context) error {
 	}
 
 	return c.JSON(200, supportedCurrencies)
+}
+
+// @API: 		 	GET /v1/mint/vote
+//
+// @Description: 	Request a vote session. This endpoint will return a currency to
+// 	to vote on and a vote session id. The vote session id allows vote responses to be accepted by `AddVote()`
+//
+// @Response 200:
+// 	currency 	Object: 	The currency to vote on
+// 	vote_id 	String:		The vote id
+func (self *MintController) GetVoteSession(c *extend.Context) error {
+
+	var maxRepeat = 3
+	var countRepeat = 0
+
+	for {
+
+		// exist loop if maxRepeat threshold is reached
+		if maxRepeat == countRepeat {
+			break
+		}
+
+		countRepeat++
+
+		// fetch a currency to vote on
+		currencyId, err := models.GetFromVoteQueue(self.redisPool)
+
+		// no currency found
+		if err != nil && err == redis.ErrNil {
+			continue
+		} else if err != nil {
+			return config.NewHTTPError(c.Lang(), 500, "e500")
+		}
+
+		currency, err := models.Currency.FindById(self.mongoSession, currencyId)
+		if err != nil {
+			return config.NewHTTPError(c.Lang(), 500, "e500")
+		}
+
+		// if current votes is equal to max vote, remove currency from queue
+		if len(currency.Votes) == config.C.GetInt("max_votes") {
+			if err = models.RemoveFromVoteQueue(self.redisPool, currencyId); err != nil {
+				return config.NewHTTPError(c.Lang(), 500, "e500")
+			}
+			continue
+		}
+
+		// count the number of active voting sessions for this currency.
+		// if number of active session is greater or equal to the number of votes remaining,
+		// continue to next iteration
+		numActiveSessions, err := models.CountActiveSessions(self.redisPool, currencyId)
+		if err != nil {
+			return config.NewHTTPError(c.Lang(), 500, "e500")
+		}
+
+		if numActiveSessions >= (config.C.GetInt("max_votes") - len(currency.Votes)) {
+			util.Println("Max session reached")
+			continue
+		}
+
+		// add new session
+		voteSessionId := util.Sha1(util.RandString(32))
+		err = models.AddNewSession(self.redisPool, currencyId, voteSessionId)
+		if err != nil {
+			return config.NewHTTPError(c.Lang(), 500, "e500")
+		}
+
+		return c.JSON(200, extend.H{
+			"currency": currency,
+			"vote_id":  voteSessionId,
+		})
+	}
+
+	return config.NewHTTPError(c.Lang(), 400, "e018")
+}
+
+// @API: 		 	PUT /v1/mint/vote
+// @Description: 	Add a vote to a currency
+//
+// @Body (JSON):
+// 	currency_id 	String: The currency id
+// 	decision		Int: The vote decision. Binary (0 or 1).
+// 	vote_id 		String: The vote id received from `GetVoteSession()`
+//
+// @Response 200:
+func (self *MintController) AddVote(c *extend.Context) error {
+
+	authUserId := c.Get("auth_user")
+
+	var body addVoteBody
+	if c.BindJSON(&body) != nil {
+		return config.NewHTTPError(c.Lang(), 400, "e001")
+	}
+
+	// validate request body
+	if _, err := govalidator.ValidateStruct(body); err != nil {
+		return config.ValidationError(c, err)
+	}
+
+	currency, err := models.Currency.FindById(self.mongoSession, body.CurrencyId)
+	if err != nil && err == mgo.ErrNotFound {
+		return config.NewHTTPError(c.Lang(), 404, "e020")
+	}
+
+	// ensure maximum number of vote hasn't been reached or (passed, if ever)
+	if len(currency.Votes) >= 3 {
+		return config.NewHTTPError(c.Lang(), 400, "e021")
+	}
+
+	// ensure authenticated user hasn't added a vote to this currency
+	for _, vote := range currency.Votes {
+		if vote.UserId.Hex() == authUserId {
+			return config.NewHTTPError(c.Lang(), 400, "e023")
+		}
+	}
+
+	// check if vote id is valid and is still active
+	active, err := models.IsActiveSession(self.redisPool, body.CurrencyId, body.VoteId)
+	if err != nil {
+		return config.NewHTTPError(c.Lang(), 400, "e022")
+	}
+
+	if !active {
+		return config.NewHTTPError(c.Lang(), 400, "e019")
+	}
+
+	// append votes
+	currency.Votes = append(currency.Votes, models.Vote{
+		Decision:  body.Decision,
+		UserId:    bson.ObjectIdHex(authUserId),
+		CreatedAt: time.Now().UTC(),
+	})
+
+	// update votes
+	if err = models.Currency.UpdateVotes(self.mongoSession, currency.Id.Hex(), currency.Votes); err != nil {
+		return config.NewHTTPError(c.Lang(), 500, "e500")
+	}
+
+	return c.JSON(200, currency)
 }

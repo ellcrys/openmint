@@ -1,9 +1,9 @@
 package www
 
 import (
-	"time"
-	"gopkg.in/mgo.v2"
 	"github.com/garyburd/redigo/redis"
+	"gopkg.in/mgo.v2"
+	"time"
 )
 
 // Establish a mongo db connection
@@ -17,8 +17,21 @@ func GetMongoSession(host, database, username, password string) (*mgo.Session, e
 	})
 }
 
-
 // Establish a redis connection
-func GetRedisConnection(addr, password string, db int) (redis.Conn, error) {
-	return redis.Dial("tcp", addr, redis.DialDatabase(db), redis.DialPassword(password))
+func GetRedisPool(addr, password string, db int) *redis.Pool {
+	return &redis.Pool{
+		MaxIdle:     3,
+		IdleTimeout: 240 * time.Second,
+		Dial: func() (redis.Conn, error) {
+			c, err := redis.Dial("tcp", addr, redis.DialDatabase(db), redis.DialPassword(password))
+			if err != nil {
+				return nil, err
+			}
+			return c, err
+		},
+		TestOnBorrow: func(c redis.Conn, t time.Time) error {
+			_, err := c.Do("PING")
+			return err
+		},
+	}
 }

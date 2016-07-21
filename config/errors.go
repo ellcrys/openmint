@@ -29,6 +29,12 @@ var errors = map[string]map[string]string{
 		"e015": "image is not a currency",
 		"e016": "Failed to read serial on currency",
 		"e017": "currency has been indexed",
+		"e018": "no currency in queue",
+		"e019": "session is not active",
+		"e020": "currency not found",
+		"e021": "currency has enough votes",
+		"e022": "vote session not active",
+		"e023": "user already added a vote",
 
 		"Fullname: non zero.*":    "full_name:fullname is required",
 		"Email: non zero.*":       "email:email is required",
@@ -39,6 +45,8 @@ var errors = map[string]map[string]string{
 		"AccessToken: non zero.*": "user_token:user_token is required",
 		"Password: non zero.*":    "password:password is required",
 		".*isValidPassword":       "password:password must have atleast 6 characters",
+		"CurrencyId: non zero.*":  "currency_id:currency id is required",
+		"VoteId: non zero.*":      "vote_id:vote id is required",
 	},
 }
 

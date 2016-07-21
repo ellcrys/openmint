@@ -8,8 +8,9 @@ import (
 )
 
 type Vote struct {
-	Label  string        `json:"label" bson:"label"`
-	UserId bson.ObjectId `json:"user_id" bson:"user_id"`
+	Decision  int           `json:"decision" bson:"decision"`
+	UserId    bson.ObjectId `json:"user_id" bson:"user_id"`
+	CreatedAt time.Time     `json:"created_at" bson:"created_at"`
 }
 
 type CurrencyModel struct {
@@ -22,7 +23,6 @@ type CurrencyModel struct {
 	Serial           string        `json:"serial" bson:"serial"`
 	Status           string        `json:"status" bson:"status"`
 	Votes            []Vote        `json:"votes" bson:"votes"`
-	Multiplier       float64       `json:"multiplier" bson:"multiplier"`
 	CreatedAt        time.Time     `json:"created_at" bson:"created_at"`
 }
 
@@ -75,7 +75,7 @@ func (m *CurrencyModel) FindById(ses *mgo.Session, id string) (*CurrencyModel, e
 	return &result, err
 }
 
-// add new app entry
+// add new currency entry
 func (m *CurrencyModel) Create(ses *mgo.Session, data *CurrencyModel) error {
 	data.CreatedAt = time.Now().UTC()
 	ses.SetMode(mgo.Monotonic, true)
@@ -83,7 +83,7 @@ func (m *CurrencyModel) Create(ses *mgo.Session, data *CurrencyModel) error {
 	return c.Insert(data)
 }
 
-// delete app
+// delete currency
 func (m *CurrencyModel) Delete(ses *mgo.Session, id string) error {
 	ses.SetMode(mgo.Monotonic, true)
 	c := ses.DB(config.C.GetString("mongo_database")).C(config.C.GetString("mongo_currency_collection"))
@@ -94,6 +94,12 @@ func (m *CurrencyModel) UpdateField(ses *mgo.Session, id, field, newValue string
 	ses.SetMode(mgo.Monotonic, true)
 	c := ses.DB(config.C.GetString("mongo_database")).C(config.C.GetString("mongo_currency_collection"))
 	return c.UpdateId(bson.ObjectIdHex(id), bson.M{"$set": bson.M{field: newValue}})
+}
+
+func (m *CurrencyModel) UpdateVotes(ses *mgo.Session, id string, votes []Vote) error {
+	ses.SetMode(mgo.Monotonic, true)
+	c := ses.DB(config.C.GetString("mongo_database")).C(config.C.GetString("mongo_currency_collection"))
+	return c.UpdateId(bson.ObjectIdHex(id), bson.M{"$set": bson.M{"votes": votes}})
 }
 
 func (m *CurrencyModel) UpdateStatus(ses *mgo.Session, id, newStatus string) error {

@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/ellcrys/openmint/config"
@@ -40,17 +41,24 @@ var (
 	MongoPassword = util.Env("MONGO_PASSWORD", "")
 	MongoDatabase = util.Env("MONGO_DB_NAME", "")
 
+	// redis params
+	RedisURL      = ""
+	RedisPassword = ""
+	RedisDatabase = util.Env("REDIS_DB", "0")
+
 	// mongo collections
 	CurrencyColName      = util.Env("MONGO_CURRENCY_COL", "currency")
 	CloudMintUserColName = util.Env("MONGO_CLOUDMINT_USER_COL", "cloudmint_user")
 	TwitterAuthColName   = util.Env("MONGO_TWITTER_AUTH_COL", "twitter_auth")
 
 	// others
-	HMACKey          = util.Env("HMAC_KEY", "")
-	FBAppId          = util.Env("FB_APP_ID", "")
-	FBAppToken       = util.Env("FB_APP_TOKEN", "")
-	TwitterConKey    = util.Env("TWITTER_CONSUMER_KEY", "")
-	TwitterConSecret = util.Env("TWITTER_CONSUMER_SECRET", "")
+	HMACKey             = util.Env("HMAC_KEY", "")
+	FBAppId             = util.Env("FB_APP_ID", "")
+	FBAppToken          = util.Env("FB_APP_TOKEN", "")
+	TwitterConKey       = util.Env("TWITTER_CONSUMER_KEY", "")
+	TwitterConSecret    = util.Env("TWITTER_CONSUMER_SECRET", "")
+	MaxVotes            = util.Env("MAX_VOTES", "3")
+	VoteSessionDuration = util.Env("VOTE_SESSION_DURATION", "1200")
 )
 
 // fetch application config
@@ -61,6 +69,8 @@ func fetchConfig() {
 		"MONGO_DB_NAME",
 		"MONGO_USERNAME",
 		"MONGO_PASSWORD",
+		"REDIS_URL",
+		"REDIS_PWD",
 	}
 
 	keys := strings.Join(names, ",")
@@ -98,6 +108,8 @@ func fetchConfig() {
 	MongoUsername = configs["MONGO_USERNAME"].(string)
 	MongoPassword = configs["MONGO_PASSWORD"].(string)
 	MongoDatabase = configs["MONGO_DB_NAME"].(string)
+	RedisURL = configs["REDIS_URL"].(string)
+	RedisPassword = configs["REDIS_PWD"].(string)
 }
 
 // setup middleware, logger etc
@@ -197,21 +209,34 @@ func App(testMode, runSeed bool) (*echo.Echo, *mgo.Session) {
 	config.C.Add("fb_app_id", FBAppId)
 	config.C.Add("twitter_con_key", TwitterConKey)
 	config.C.Add("twitter_con_secret", TwitterConSecret)
+	config.C.Add("max_votes", MaxVotes)
+	config.C.Add("vote_session_duration", VoteSessionDuration)
 
 	// mongo connection
 	mongoSession, err := GetMongoSession(MongoDBHosts, MongoDatabase, MongoUsername, MongoPassword)
 	if err != nil {
-		util.Println("could not connect to mongo database")
+		util.Println("could not connect to mongo database -> ", err)
 		os.Exit(1)
 	} else {
 		models.Currency.EnsureIndex(mongoSession)
 		models.User.EnsureIndex(mongoSession)
 	}
 
+	// redis connection
+	redisDB, _ := strconv.Atoi(RedisDatabase)
+	redisPool := GetRedisPool(RedisURL, RedisPassword, redisDB)
+	conn := redisPool.Get()
+	defer conn.Close()
+	if _, err := redisPool.Get().Do("PING"); err != nil {
+		util.Println("could not connect to redis database", err)
+		conn.Close()
+		os.Exit(1)
+	}
+
 	// initialize controllers
 	appCntrl := lib.NewAppController()
 	policyCntrl := lib.NewPolicyController(mongoSession)
-	mintCntrl := lib.NewMintController(mongoSession, gStorageClient, gVisionClient)
+	mintCntrl := lib.NewMintController(mongoSession, redisPool, gStorageClient, gVisionClient)
 	userCntrl := lib.NewUserController(mongoSession)
 	authCntrl := lib.NewAuthController(mongoSession)
 
@@ -234,6 +259,8 @@ func App(testMode, runSeed bool) (*echo.Echo, *mgo.Session) {
 	var mintRoute = v1.Group("/mint")
 	mintRoute.POST("/new", extend.Handle(mintCntrl.Process), UseAuthPolicy(policyCntrl)...)
 	mintRoute.GET("/supported_currencies", extend.Handle(mintCntrl.GetSupportedCurrencies), UseAuthPolicy(policyCntrl)...)
+	mintRoute.GET("/vote", extend.Handle(mintCntrl.GetVoteSession), UseAuthPolicy(policyCntrl)...)
+	mintRoute.PUT("/vote", extend.Handle(mintCntrl.AddVote), UseAuthPolicy(policyCntrl)...)
 
 	return router, mongoSession
 }

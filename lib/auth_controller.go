@@ -21,7 +21,7 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
-const TWITTER_CB_URL = "http://192.168.1.2:4001/v1/auth/twitter/cb"
+const TWITTER_CB_URL = "http://192.168.1.3:4001/v1/auth/twitter/cb"
 
 type AuthController struct {
 	mongoSession *mgo.Session

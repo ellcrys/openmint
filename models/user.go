@@ -19,6 +19,7 @@ type UserModel struct {
 	AccessToken    string        `json:"access_token,omitempty" bson:"access_token" valid:"required"`
 	AccessSecret   string        `json:"access_secret,omitempty" bson:"access_secret"` // twitter only
 	CreatedAt      time.Time     `json:"created_at" bson:"created_at"`
+	Multiplier     float64       `json:"multiplier" bson:"multiplier"`
 	TokenString    string        `json:"session_token,omitempty" bson:"-"`
 }
 
